@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Invoice Builder
+    </title>
+
+
+    <!-- FONT -->
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- CSS -->
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+    <!-- =====================================================
+         DASHBOARD
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+
+        <div class="brand">
+            INVOICE BUILDER
+        </div>
+
+
+        <div class="legend">
+
+            <span class="pill editable-pill">
+                EDITABLE
+            </span>
+
+            <span class="pill static-pill">
+                STATIC DESIGN
+            </span>
+
+        </div>
+
+
+
+        <!-- DOCUMENT -->
+
+        <section class="form-section">
+
+            <div class="section-title">
+                DOCUMENT
+            </div>
+
+
+            <div class="two-columns">
+
+
+                <div class="form-field">
+
+                    <label>
+                        Currency
+                    </label>
+
+                    <select id="currency">
+
+                        <option value="PKR">
+                            PKR
+                        </option>
+
+                        <option value="USD">
+                            USD
+                        </option>
+
+                        <option value="EUR">
+                            EUR
+                        </option>
+
+                        <option value="GBP">
+                            GBP
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label>
+                        Invoice Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="invoiceNo"
+                        placeholder="Invoice number"
+                    >
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label>
+                        Invoice Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="invoiceDate"
+                    >
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label>
+                        Due Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="dueDate"
+                    >
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- CLIENT -->
+
+        <section class="form-section">
+
+            <div class="section-title">
+                CLIENT
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Billed To
+                </label>
+
+                <input
+                    type="text"
+                    id="client"
+                    placeholder="Client name"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Client Address
+                </label>
+
+                <input
+                    type="text"
+                    id="address"
+                    placeholder="Client address"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Project
+                </label>
+
+                <input
+                    type="text"
+                    id="project"
+                    placeholder="Project name"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Payment Status
+                </label>
+
+                <select id="paymentStatus">
+
+                    <option value="DUE">
+                        DUE
+                    </option>
+
+                    <option value="PAID">
+                        PAID
+                    </option>
+
+                    <option value="PENDING">
+                        PENDING
+                    </option>
+
+                </select>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- DELIVERABLES -->
+
+        <section class="form-section">
+
+            <div class="section-title">
+                DELIVERABLES
+            </div>
+
+
+            <div
+                id="deliverableEditors"
+                class="deliverable-editors"
+            >
+            </div>
+
+
+            <button
+                type="button"
+                id="addDeliverable"
+                class="add-deliverable"
+            >
+
+                + ADD DELIVERABLE
+
+            </button>
+
+        </section>
+
+
+
+        <!-- COMMERCIAL -->
+
+        <section class="form-section">
+
+            <div class="section-title">
+                COMMERCIAL
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Original Project Fee
+                </label>
+
+                <input
+                    type="number"
+                    id="fee"
+                    min="0"
+                    value="0"
+                >
+
+            </div>
+
+
+            <div class="two-columns">
+
+
+                <div class="form-field">
+
+                    <label>
+                        Discount %
+                    </label>
+
+                    <input
+                        type="number"
+                        id="discount"
+                        min="0"
+                        max="100"
+                        value="0"
+                    >
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <label>
+                        Tax %
+                    </label>
+
+                    <input
+                        type="number"
+                        id="tax"
+                        min="0"
+                        value="0"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Payment Terms
+                </label>
+
+                <input
+                    type="text"
+                    id="terms"
+                    placeholder="Payment terms"
+                >
+
+            </div>
+
+        </section>
+
+
+
+        <!-- FOOTER -->
+
+        <section class="form-section">
+
+            <div class="section-title">
+                FOOTER
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Footer Left
+                </label>
+
+                <input
+                    type="text"
+                    id="footerLeft"
+                    placeholder="Footer text"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Footer Project
+                </label>
+
+                <input
+                    type="text"
+                    id="footerProject"
+                    placeholder="Project"
+                >
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ACTIONS -->
+
+        <div class="actions">
+
+            <button
+                type="button"
+                id="clearBtn"
+                class="clear-button"
+            >
+                CLEAR
+            </button>
+
+
+            <button
+                type="button"
+                id="printBtn"
+                class="print-button"
+            >
+                PRINT / PDF
+            </button>
+
+        </div>
+
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         INVOICE PREVIEW
+    ====================================================== -->
+
+    <main class="preview-area">
+
+
+        <article
+            class="invoice"
+            id="invoice"
+        >
+
+
+            <!-- =================================================
+                 HEADER
+            ================================================== -->
+
+            <header class="invoice-header">
+
+
+                <!--
+                    LAYER 1
+                    Banner / background
+
+                    This comes FIRST in the DOM.
+                -->
+
+                <div class="header-banner">
+
+                </div>
+
+
+
+                <!--
+                    LAYER 2
+                    Image on top of banner
+
+                    This comes AFTER the banner,
+                    so it paints on top WITHOUT z-index.
+                -->
+
+                <img
+                    src="header-overlay.1.jpg"
+                    class="header-overlay"
+                    alt=""
+                >
+
+
+
+                <!--
+                    Header content
+                -->
+
+                <div class="invoice-title">
+                    INVOICE
+                </div>
+
+
+
+                <!-- QR NUMBER -->
+
+                <div
+                    class="qr-number"
+                    id="qrNumber"
+                >
+                    INV-TL-2026-001
+                </div>
+
+
+
+                <!-- QR -->
+
+                <div class="qr-wrapper">
+
+                    <div id="qr">
+                    </div>
+
+                </div>
+
+
+            </header>
+
+
+
+            <!-- =================================================
+                 META INFORMATION
+            ================================================== -->
+
+            <section class="invoice-meta">
+
+
+                <!-- BILLED TO -->
+
+                <div class="meta-column">
+
+                    <div class="meta-label">
+                        BILLED TO
+                    </div>
+
+
+                    <div
+                        class="meta-value"
+                        id="outClient"
+                    >
+                        Client Name
+                    </div>
+
+
+                    <div
+                        class="meta-small"
+                        id="outAddress"
+                    >
+                        Client address
+                    </div>
+
+
+                    <div class="payment-status">
+
+                        <span class="status-label">
+                            PAYMENT STATUS
+                        </span>
+
+                        <span
+                            id="outStatus"
+                            class="status-value"
+                        >
+                            DUE
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- PROJECT -->
+
+                <div class="meta-column">
+
+                    <div class="meta-label">
+                        PROJECT
+                    </div>
+
+
+                    <div
+                        class="meta-value"
+                        id="outProject"
+                    >
+                        Project Name
+                    </div>
+
+
+                    <div class="meta-small">
+                        Content Production
+                    </div>
+
+                </div>
+
+
+
+                <!-- DATE -->
+
+                <div class="meta-column issued-column">
+
+                    <div class="meta-label">
+                        ISSUED
+                    </div>
+
+
+                    <div
+                        class="meta-value"
+                        id="outDate"
+                    >
+                        17 AUG 2026
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =================================================
+                 DELIVERABLES
+            ================================================== -->
+
+            <section class="invoice-deliverables">
+
+
+                <h2>
+                    DELIVERABLES
+                </h2>
+
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                DELIVERABLE
+                            </th>
+
+                            <th>
+                                DESCRIPTION
+                            </th>
+
+                            <th>
+                                QTY
+                            </th>
+
+                            <th>
+                                AMOUNT
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="deliverableRows"
+                    >
+                    </tbody>
+
+                </table>
+
+
+            </section>
+
+
+
+            <!-- =================================================
+                 COMMERCIAL SUMMARY
+            ================================================== -->
+
+            <section class="commercial-summary">
+
+
+                <div class="summary-left">
+
+
+                    <div class="summary-heading">
+                        COMMERCIAL SUMMARY
+                    </div>
+
+
+                    <div class="summary-row">
+
+                        <span>
+                            Original project fee
+                        </span>
+
+                        <strong id="outFee">
+                            PKR 0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row">
+
+                        <span id="discountLabel">
+                            0% discount
+                        </span>
+
+                        <strong id="outDiscount">
+                            − PKR 0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row">
+
+                        <span id="taxLabel">
+                            0% tax
+                        </span>
+
+                        <strong id="outTax">
+                            + PKR 0
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="total-box">
+
+                    <div class="total-label">
+                        TOTAL DUE
+                    </div>
+
+
+                    <div
+                        class="total-amount"
+                        id="outTotal"
+                    >
+                        PKR 0
+                    </div>
+
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =================================================
+                 FOOTER
+            ================================================== -->
+
+            <footer class="invoice-footer">
+
+
+                <div class="footer-column">
+
+                    <div class="footer-label">
+                        PAYMENT TERMS
+                    </div>
+
+
+                    <div
+                        class="footer-value"
+                        id="outTerms"
+                    >
+                        100% due on invoice
+                    </div>
+
+                </div>
+
+
+
+                <div class="footer-column">
+
+                    <div class="footer-label">
+                        PROJECT
+                    </div>
+
+
+                    <div
+                        class="footer-value"
+                        id="outFooterProject"
+                    >
+                        Project
+                    </div>
+
+                </div>
+
+
+
+                <div
+                    class="footer-column
+                           footer-brand-column"
+                >
+
+                    <div class="footer-brand">
+
+                        THINKLIMITLESS
+
+                        <span class="footer-mark">
+                            ✦
+                        </span>
+
+                    </div>
+
+
+                    <div class="footer-value">
+                        AI · MEDIA · CREATIVITY
+                    </div>
+
+                </div>
+
+
+            </footer>
+
+
+
+            <!-- BOTTOM -->
+
+            <div class="bottom-footer">
+
+                <span id="outFooterLeft">
+                    THINKLIMITLESS © 2026
+                </span>
+
+
+                <span id="footerRight">
+                    CLIENT · PROJECT
+                </span>
+
+            </div>
+
+
+        </article>
+
+
+    </main>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     QR CODE LIBRARY
+====================================================== -->
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+></script>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>
