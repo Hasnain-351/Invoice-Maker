@@ -60,6 +60,9 @@ let deliverables = [
 ];
 
 
+let brandLogoData = "";
+
+
 /* =========================================================
    FORMAT MONEY
 ========================================================= */
@@ -844,6 +847,70 @@ function updatePaymentTerms() {
 
 
 /* =========================================================
+   UPDATE BRANDING
+========================================================= */
+
+function updateBranding() {
+
+    const brandName =
+        $("brandName")?.value.trim() ||
+        "THINKLIMITLESS";
+
+    const brandTagline =
+        $("brandTagline")?.value.trim() ||
+        "AI · MEDIA · CREATIVITY";
+
+    const logoPreview =
+        $("outBrandLogo");
+
+
+    if ($("outBrandName")) {
+
+        $("outBrandName").textContent =
+            brandName;
+
+    }
+
+
+    if ($("outBrandTagline")) {
+
+        $("outBrandTagline").textContent =
+            brandTagline;
+
+    }
+
+
+    if (logoPreview) {
+
+        if (brandLogoData) {
+
+            logoPreview.src =
+                brandLogoData;
+
+            logoPreview.classList.add(
+                "has-image"
+            );
+
+        }
+
+        else {
+
+            logoPreview.removeAttribute(
+                "src"
+            );
+
+            logoPreview.classList.remove(
+                "has-image"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
    UPDATE FOOTER LEFT
 ========================================================= */
 
@@ -857,7 +924,7 @@ function updateFooter() {
 
         $("outFooterLeft").textContent =
             footerText ||
-            "THINKLIMITLESS © 2026";
+            "THINKLIMITLESS 2026";
 
     }
 
@@ -1049,6 +1116,8 @@ function updateInvoice() {
 
     updatePaymentTerms();
 
+    updateBranding();
+
     updateFooter();
 
     calculateInvoice();
@@ -1081,7 +1150,11 @@ function clearInvoice() {
 
         "footerLeft",
 
-        "footerProject"
+        "footerProject",
+
+        "brandName",
+
+        "brandTagline"
 
     ];
 
@@ -1098,6 +1171,22 @@ function clearInvoice() {
 
         }
     );
+
+
+    const logoInput =
+        $("brandLogo");
+
+
+    if (logoInput) {
+
+        logoInput.value =
+            "";
+
+    }
+
+
+    brandLogoData =
+        "";
 
 
     if ($("invoiceDate")) {
@@ -1268,6 +1357,55 @@ document.addEventListener(
             printButton.addEventListener(
                 "click",
                 printInvoice
+            );
+
+        }
+
+
+        const logoInput =
+            $("brandLogo");
+
+
+        if (logoInput) {
+
+            logoInput.addEventListener(
+                "change",
+                function(event) {
+
+                    const file =
+                        event.target.files?.[0];
+
+
+                    if (!file) {
+
+                        brandLogoData =
+                            "";
+
+                        updateBranding();
+
+                        return;
+
+                    }
+
+
+                    const reader =
+                        new FileReader();
+
+
+                    reader.onload =
+                        function(loadEvent) {
+
+                            brandLogoData =
+                                loadEvent.target.result;
+
+                            updateBranding();
+
+                        };
+
+
+                    reader.readAsDataURL(file);
+
+                }
             );
 
         }
