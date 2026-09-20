@@ -39,7 +39,10 @@ let deliverables = [
             8,
 
         amount:
-            20000
+            20000,
+
+        status:
+            "PENDING"
     },
 
 
@@ -54,7 +57,10 @@ let deliverables = [
             3,
 
         amount:
-            3000
+            3000,
+
+        status:
+            "PAID"
     }
 
 ];
@@ -328,6 +334,40 @@ function renderDeliverableEditors() {
 
                             </div>
 
+
+                            <div
+                                class="form-field"
+                            >
+
+                                <label>
+                                    Payment Status
+                                </label>
+
+                                <select
+                                    onchange="
+                                        updateDeliverable(
+                                            ${index},
+                                            'status',
+                                            this.value
+                                        )
+                                    "
+                                >
+                                    <option value="PENDING" ${item.status === "PENDING" ? "selected" : ""}>
+                                        Pending
+                                    </option>
+                                    <option value="PAID" ${item.status === "PAID" ? "selected" : ""}>
+                                        Paid
+                                    </option>
+                                    <option value="PARTIAL" ${item.status === "PARTIAL" ? "selected" : ""}>
+                                        Partial
+                                    </option>
+                                    <option value="OVERDUE" ${item.status === "OVERDUE" ? "selected" : ""}>
+                                        Overdue
+                                    </option>
+                                </select>
+
+                            </div>
+
                         </div>
 
                     `;
@@ -431,7 +471,10 @@ function addDeliverable() {
             1,
 
         amount:
-            0
+            0,
+
+        status:
+            "PENDING"
 
     });
 
@@ -523,6 +566,19 @@ function renderDeliverableTable() {
 
                             </td>
 
+
+                            <td>
+
+                                <span
+                                    class="deliverable-status ${(
+                                        item.status || "PENDING"
+                                    ).toLowerCase()}"
+                                >
+                                    ${(item.status || "PENDING").toUpperCase()}
+                                </span>
+
+                            </td>
+
                         </tr>
 
                     `;
@@ -562,13 +618,12 @@ function generateQR(
 
 
     /*
-       Use invoice number
-       as QR data
+       Use the company website
+       as QR destination
     */
 
     const qrValue =
-        invoiceNumber ||
-        DEFAULT_INVOICE;
+        "https://www.thinklimitless.co/";
 
 
     /*
@@ -598,7 +653,6 @@ function generateQR(
         {
 
             text:
-                "INVOICE:" +
                 qrValue,
 
             width:
@@ -723,6 +777,19 @@ function updateProject() {
         "CLIENT";
 
 
+    const footerProject =
+        $("footerProject");
+
+
+    if (footerProject) {
+
+        footerProject.value =
+            footerProject.value.trim() ||
+            project;
+
+    }
+
+
     if ($("outProject")) {
 
         $("outProject").textContent =
@@ -734,6 +801,7 @@ function updateProject() {
     if ($("outFooterProject")) {
 
         $("outFooterProject").textContent =
+            footerProject?.value.trim() ||
             project;
 
     }
@@ -932,6 +1000,89 @@ function updateFooter() {
 
 
 /* =========================================================
+   DISCOUNT CONTROLS
+========================================================= */
+
+function updateDiscountControls() {
+
+    const hasDiscount =
+        $("hasDiscount");
+
+    const discountBlock =
+        $("discountBlock");
+
+    const discountType =
+        $("discountType");
+
+    const discountInput =
+        $("discount");
+
+    const discountInputLabel =
+        $("discountInputLabel");
+
+    if (
+        !hasDiscount ||
+        !discountBlock ||
+        !discountType ||
+        !discountInput ||
+        !discountInputLabel
+    ) {
+
+        return;
+
+    }
+
+    discountBlock.hidden =
+        !hasDiscount.checked;
+
+    if (discountType.value === "amount") {
+
+        discountInputLabel.textContent =
+            "Discount Amount";
+
+        discountInput.max = "";
+
+    } else {
+
+        discountInputLabel.textContent =
+            "Discount %";
+
+        discountInput.max = "100";
+
+    }
+
+    if ($("discountRow")) {
+
+        $("discountRow").style.display =
+            hasDiscount.checked ?
+                "flex" :
+                "none";
+
+    }
+
+}
+
+
+/* =========================================================
+   DELIVERABLE TOTALS
+========================================================= */
+
+function getDeliverablesTotal() {
+
+    return deliverables.reduce(
+        function(total, item) {
+
+            return total +
+                (Number(item.amount) || 0);
+
+        },
+        0
+    );
+
+}
+
+
+/* =========================================================
    CALCULATE COMMERCIAL TOTAL
 ========================================================= */
 
@@ -942,10 +1093,23 @@ function calculateInvoice() {
 
 
     const fee =
-        Number(
-            $("fee")?.value
-        ) || 0;
+        getDeliverablesTotal();
 
+
+    if ($("fee")) {
+
+        $("fee").value =
+            fee;
+
+    }
+
+
+    const hasDiscount =
+        $("hasDiscount")?.checked;
+
+    const discountType =
+        $("discountType")?.value ||
+        "percent";
 
     let discount =
         Number(
@@ -959,18 +1123,30 @@ function calculateInvoice() {
         ) || 0;
 
 
-    /*
-       Protect percentages
-    */
+    if (!hasDiscount) {
 
-    discount =
-        Math.min(
-            100,
+        discount = 0;
+
+    } else if (discountType === "percent") {
+
+        discount =
+            Math.min(
+                100,
+                Math.max(
+                    0,
+                    discount
+                )
+            );
+
+    } else {
+
+        discount =
             Math.max(
                 0,
                 discount
-            )
-        );
+            );
+
+    }
 
 
     tax =
@@ -985,9 +1161,17 @@ function calculateInvoice() {
     */
 
     const discountAmount =
-        fee *
-        discount /
-        100;
+        hasDiscount &&
+        discountType === "percent"
+            ? fee *
+              discount /
+              100
+            : hasDiscount
+                ? Math.min(
+                    fee,
+                    discount
+                )
+                : 0;
 
 
     /*
@@ -1038,9 +1222,20 @@ function calculateInvoice() {
 
     if ($("discountLabel")) {
 
-        $("discountLabel").textContent =
-            discount +
-            "% discount";
+        if (hasDiscount) {
+
+            $("discountLabel").textContent =
+                discountType === "amount"
+                    ? "Discount"
+                    : discount +
+                      "% discount";
+
+        } else {
+
+            $("discountLabel").textContent =
+                "0% discount";
+
+        }
 
     }
 
@@ -1048,12 +1243,16 @@ function calculateInvoice() {
     if ($("outDiscount")) {
 
         $("outDiscount").textContent =
-            "− " +
-            currency +
-            " " +
-            formatMoney(
-                discountAmount
-            );
+            hasDiscount
+                ? "− " +
+                  currency +
+                  " " +
+                  formatMoney(
+                      discountAmount
+                  )
+                : "− " +
+                  currency +
+                  " 0";
 
     }
 
@@ -1119,6 +1318,8 @@ function updateInvoice() {
     updateBranding();
 
     updateFooter();
+
+    updateDiscountControls();
 
     calculateInvoice();
 
@@ -1213,10 +1414,26 @@ function clearInvoice() {
     }
 
 
+    if ($("hasDiscount")) {
+
+        $("hasDiscount").checked =
+            false;
+
+    }
+
+
     if ($("discount")) {
 
         $("discount").value =
             0;
+
+    }
+
+
+    if ($("discountType")) {
+
+        $("discountType").value =
+            "percent";
 
     }
 
