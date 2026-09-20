@@ -274,6 +274,57 @@ body {
 }
 
 
+.checkbox-field {
+
+    margin-bottom: 10px;
+
+}
+
+
+.toggle-label {
+
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    color: #1a1a1a;
+
+    font-size: 8px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: .05em;
+
+}
+
+
+.toggle-label input {
+
+    width: 14px;
+    height: 14px;
+
+    margin: 0;
+
+}
+
+
+.discount-block {
+
+    margin-bottom: 10px;
+
+}
+
+
+.placeholder-spacer {
+
+    display: block;
+    width: 100%;
+    height: 1px;
+
+}
+
+
 .form-field input:focus,
 .form-field select:focus {
 
@@ -698,7 +749,7 @@ body {
     gap: 28px;
 
     margin:
-        0 34px 17px;
+        18px 34px 17px;
 
 }
 
@@ -852,7 +903,7 @@ body {
 .invoice-deliverables th:nth-child(1),
 .invoice-deliverables td:nth-child(1) {
 
-    width: 36%;
+    width: 28%;
 
 }
 
@@ -860,7 +911,7 @@ body {
 .invoice-deliverables th:nth-child(2),
 .invoice-deliverables td:nth-child(2) {
 
-    width: 39%;
+    width: 31%;
 
 }
 
@@ -885,11 +936,73 @@ body {
 }
 
 
+.invoice-deliverables th:nth-child(5),
+.invoice-deliverables td:nth-child(5) {
+
+    width: 16%;
+
+    text-align: center;
+
+}
+
+
 .deliverable-name {
 
     font-weight: 700;
 
     text-transform: uppercase;
+
+}
+
+
+.deliverable-status {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding:
+        4px 7px;
+
+    border-radius:
+        999px;
+
+    font-size: 6px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+
+}
+
+
+.deliverable-status.pending {
+
+    background: #fff1d6;
+    color: #8a5a00;
+
+}
+
+
+.deliverable-status.paid {
+
+    background: #daf5de;
+    color: #18652d;
+
+}
+
+
+.deliverable-status.partial {
+
+    background: #e7e7ff;
+    color: #3d3d9e;
+
+}
+
+
+.deliverable-status.overdue {
+
+    background: #fde2e2;
+    color: #a22424;
 
 }
 
@@ -933,7 +1046,11 @@ body {
 
     display: flex;
 
+    align-items: center;
+
     justify-content: space-between;
+
+    gap: 12px;
 
     margin: 7px 0;
 
@@ -944,11 +1061,26 @@ body {
 }
 
 
+.summary-row span {
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+
 .summary-row strong {
+
+    display: block;
+
+    min-width: 120px;
 
     color: #333;
 
     font-weight: 500;
+
+    text-align: right;
 
 }
 
