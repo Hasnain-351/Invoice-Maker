@@ -43,6 +43,216 @@ body {
 }
 
 
+.hidden {
+    display: none !important;
+}
+
+
+.auth-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: #efefec;
+}
+
+
+.auth-card {
+    width: min(420px, 100%);
+    padding: 28px 24px 22px;
+    background: white;
+    border: 1px solid #d8d8d8;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+}
+
+
+.auth-title {
+    margin-bottom: 18px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+
+.auth-role-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+
+.auth-role {
+    height: 42px;
+    border: 1px solid #111;
+    border-radius: 10px;
+    background: white;
+    color: #111;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+
+.auth-role.active {
+    background: #111;
+    color: white;
+}
+
+
+.auth-field {
+    margin-bottom: 14px;
+}
+
+
+.auth-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #62666b;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+
+.auth-field input {
+    width: 100%;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #f8f8f8;
+    font: inherit;
+}
+
+
+.login-button {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #111;
+    border-radius: 999px;
+    background: #111;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+
+.login-error {
+    min-height: 18px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #a11b1b;
+}
+
+
+.landing-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: #efefec;
+}
+
+
+.landing-card {
+    width: min(560px, 100%);
+    padding: 30px 24px 24px;
+    background: white;
+    border: 1px solid #d8d8d8;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+}
+
+
+.landing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+
+.landing-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+
+.landing-logout-button {
+    border: 1px solid #111;
+    border-radius: 999px;
+    background: white;
+    color: #111;
+    padding: 8px 14px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+
+.landing-actions {
+    display: grid;
+    gap: 18px;
+}
+
+
+.landing-button {
+    width: 100%;
+    height: 44px;
+    border: 1px solid #111;
+    border-radius: 999px;
+    background: white;
+    color: #111;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+
+.landing-button.primary {
+    background: #111;
+    color: white;
+}
+
+
+.landing-open {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+
+.landing-open input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #d8d8d8;
+    border-radius: 999px;
+    background: #f8f8f8;
+    font: inherit;
+}
+
+
+.landing-error {
+    min-height: 18px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: #a11b1b;
+}
+
+
 /* =========================================================
    APP
 ========================================================= */
@@ -87,10 +297,18 @@ body {
 }
 
 
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+
 .brand {
 
-    margin:
-        3px 2px 17px;
+    margin: 0;
 
     font-size: 13px;
 
@@ -98,6 +316,19 @@ body {
 
     font-weight: 700;
 
+}
+
+
+.logout-button {
+    padding: 8px 10px;
+    border: 1px solid #111;
+    border-radius: 999px;
+    background: white;
+    color: #111;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    cursor: pointer;
 }
 
 
@@ -112,50 +343,6 @@ body {
     gap: 7px;
 
     margin-bottom: 13px;
-
-}
-
-
-.pill {
-
-    padding:
-        5px 9px;
-
-    border-radius:
-        999px;
-
-    font-size: 8px;
-
-    font-weight: 700;
-
-    letter-spacing:
-        .06em;
-
-}
-
-
-.editable-pill {
-
-    color: white;
-
-    background: #111;
-
-    border:
-        1px solid
-        #111;
-
-}
-
-
-.static-pill {
-
-    color: #555;
-
-    background: white;
-
-    border:
-        1px solid
-        #ccc;
 
 }
 
@@ -481,6 +668,19 @@ body {
 }
 
 
+.save-button {
+
+    background: #bfbfbf;
+
+    color: #111;
+
+    border:
+        1px solid
+        #111;
+
+}
+
+
 .print-button {
 
     background: #111;
@@ -585,7 +785,7 @@ body {
     height: 100%;
 
     background-image:
-        url("invoice_header_bg.png");
+        url("header-overlay.1.jpg");
 
     background-repeat:
         no-repeat;
@@ -670,13 +870,23 @@ body {
 
     right: 32px;
 
-    bottom: 150px;
+    bottom: 138px;
 
     color: white;
 
-    font-size: 6px;
+    width: 106px;
+
+    font-size: 10px;
 
     font-weight: 600;
+
+    line-height: 1.2;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    z-index: 2;
 
 }
 
@@ -1341,7 +1551,7 @@ body {
 
         right: 23px;
 
-        bottom: 111px;
+        bottom: 145px;
 
     }
 
@@ -1399,11 +1609,93 @@ body {
 
 @media (max-width: 600px) {
 
+    .sidebar {
+
+        padding: 12px;
+
+    }
+
+
+    .form-section {
+
+        padding: 10px;
+
+    }
+
+
+    .two-columns {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+
+    .actions {
+
+        flex-direction: column;
+
+    }
+
+
+    .invoice-header {
+
+        height: 240px;
+
+    }
+
+
+    .invoice-title {
+
+        left: 18px;
+        bottom: 16px;
+
+        font-size: 38px;
+
+    }
+
+
+    .qr-wrapper {
+
+        right: 16px;
+        bottom: 16px;
+
+        width: 74px;
+        height: 74px;
+
+        padding: 4px;
+
+    }
+
+
+    #qr,
+    #qr img,
+    #qr canvas {
+
+        width: 64px;
+        height: 64px;
+
+    }
+
+
+    .qr-number {
+
+        right: 18px;
+        bottom: 103px;
+
+        width: 74px;
+
+        font-size: 8px;
+
+    }
+
+
     .invoice-meta {
 
         grid-template-columns:
-            1fr
             1fr;
+
+        gap: 18px;
 
     }
 
@@ -1411,6 +1703,20 @@ body {
     .issued-column {
 
         text-align: left;
+
+    }
+
+
+    .invoice-deliverables {
+
+        overflow-x: auto;
+
+    }
+
+
+    .invoice-deliverables table {
+
+        min-width: 500px;
 
     }
 
@@ -1423,18 +1729,42 @@ body {
     }
 
 
-    .invoice-footer {
+    .summary-row {
 
-        grid-template-columns:
-            1fr
-            1fr;
+        gap: 8px;
 
     }
 
 
-    .invoice-title {
+    .summary-row strong {
 
-        font-size: 48px;
+        min-width: 90px;
+
+    }
+
+
+    .invoice-footer {
+
+        grid-template-columns:
+            1fr;
+
+        gap: 12px;
+
+    }
+
+
+    .footer-brand-column {
+
+        text-align: left;
+
+    }
+
+
+    .bottom-footer {
+
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
 
     }
 
@@ -1495,5 +1825,12 @@ body {
         margin: 0;
 
     }
+
+}
+
+
+[hidden] {
+
+    display: none !important;
 
 }
