@@ -10,12 +10,10 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Invoice Builder
-    </title>
+    <title>Invoice Builder</title>
 
 
-    <!-- FONT -->
+    <!-- GOOGLE FONT -->
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -23,7 +21,7 @@
     >
 
 
-    <!-- CSS -->
+    <!-- YOUR CSS -->
 
     <link
         rel="stylesheet"
@@ -36,36 +34,148 @@
 <body>
 
 
-<div class="app">
+<div id="authScreen" class="auth-screen">
 
+    <div class="auth-card">
+
+        <div class="auth-title">
+            LOGIN
+        </div>
+
+        <div class="auth-role-buttons">
+
+            <button
+                type="button"
+                class="auth-role active"
+                data-role="admin"
+            >
+                ADMIN LOGIN
+            </button>
+
+            <button
+                type="button"
+                class="auth-role"
+                data-role="employee"
+            >
+                EMPLOYEE LOGIN
+            </button>
+
+        </div>
+
+        <div class="auth-field">
+
+            <label for="loginPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Enter password"
+            >
+
+        </div>
+
+        <button
+            type="button"
+            id="loginBtn"
+            class="login-button"
+        >
+            LOGIN
+        </button>
+
+        <div id="loginError" class="login-error" aria-live="polite"></div>
+
+    </div>
+
+</div>
+
+
+<div id="landingScreen" class="landing-screen hidden">
+
+    <div class="landing-card">
+
+        <div class="landing-header">
+
+            <div class="landing-title">
+                INVOICE ACTIONS
+            </div>
+
+            <button
+                type="button"
+                id="landingLogoutBtn"
+                class="landing-logout-button"
+            >
+                LOGOUT
+            </button>
+
+        </div>
+
+        <div class="landing-actions">
+
+            <button
+                type="button"
+                id="newInvoiceBtn"
+                class="landing-button primary"
+            >
+                NEW INVOICE
+            </button>
+
+            <div class="landing-open">
+
+                <input
+                    type="text"
+                    id="openInvoiceNumber"
+                    placeholder="Enter invoice number"
+                >
+
+                <button
+                    type="button"
+                    id="openInvoiceBtn"
+                    class="landing-button"
+                >
+                    OPEN INVOICE
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="landingError" class="landing-error" aria-live="polite"></div>
+
+    </div>
+
+</div>
+
+
+<div id="app" class="app hidden">
 
     <!-- =====================================================
-         DASHBOARD
+         SIDEBAR
     ====================================================== -->
 
     <aside class="sidebar">
 
+        <div class="sidebar-header">
 
-        <div class="brand">
-            INVOICE BUILDER
-        </div>
+            <div class="brand">
+                INVOICE BUILDER
+            </div>
 
-
-        <div class="legend">
-
-            <span class="pill editable-pill">
-                EDITABLE
-            </span>
-
-            <span class="pill static-pill">
-                STATIC DESIGN
-            </span>
+            <button
+                type="button"
+                id="logoutBtn"
+                class="logout-button"
+            >
+                LOGOUT
+            </button>
 
         </div>
 
 
-
-        <!-- DOCUMENT -->
+        <!-- =================================================
+             DOCUMENT
+        ================================================== -->
 
         <section class="form-section">
 
@@ -148,14 +258,14 @@
 
                 </div>
 
-
             </div>
 
         </section>
 
 
-
-        <!-- CLIENT -->
+        <!-- =================================================
+             CLIENT
+        ================================================== -->
 
         <section class="form-section">
 
@@ -236,8 +346,9 @@
         </section>
 
 
-
-        <!-- DELIVERABLES -->
+        <!-- =================================================
+             DELIVERABLES
+        ================================================== -->
 
         <section class="form-section">
 
@@ -249,8 +360,7 @@
             <div
                 id="deliverableEditors"
                 class="deliverable-editors"
-            >
-            </div>
+            ></div>
 
 
             <button
@@ -258,16 +368,15 @@
                 id="addDeliverable"
                 class="add-deliverable"
             >
-
                 + ADD DELIVERABLE
-
             </button>
 
         </section>
 
 
-
-        <!-- COMMERCIAL -->
+        <!-- =================================================
+             COMMERCIAL
+        ================================================== -->
 
         <section class="form-section">
 
@@ -296,13 +405,16 @@
             <div class="form-field checkbox-field">
 
                 <label class="toggle-label">
+
                     <input
                         type="checkbox"
                         id="hasDiscount"
                     >
+
                     <span>
                         Add discount
                     </span>
+
                 </label>
 
             </div>
@@ -316,6 +428,7 @@
 
                 <div class="two-columns">
 
+
                     <div class="form-field">
 
                         <label>
@@ -323,12 +436,15 @@
                         </label>
 
                         <select id="discountType">
+
                             <option value="percent">
                                 Percent
                             </option>
+
                             <option value="amount">
                                 Amount
                             </option>
+
                         </select>
 
                     </div>
@@ -375,7 +491,9 @@
 
 
                 <div class="form-field">
+
                     <span class="placeholder-spacer"></span>
+
                 </div>
 
             </div>
@@ -398,8 +516,9 @@
         </section>
 
 
-
-        <!-- FOOTER -->
+        <!-- =================================================
+             FOOTER
+        ================================================== -->
 
         <section class="form-section">
 
@@ -468,25 +587,12 @@
             </div>
 
 
-            <div class="form-field">
-
-                <label>
-                    Footer Project
-                </label>
-
-                <input
-                    type="text"
-                    id="footerProject"
-                    placeholder="Project"
-                >
-
-            </div>
-
         </section>
 
 
-
-        <!-- ACTIONS -->
+        <!-- =================================================
+             ACTIONS
+        ================================================== -->
 
         <div class="actions">
 
@@ -496,6 +602,15 @@
                 class="clear-button"
             >
                 CLEAR
+            </button>
+
+
+            <button
+                type="button"
+                id="saveBtn"
+                class="save-button"
+            >
+                SAVE
             </button>
 
 
@@ -534,26 +649,8 @@
             <header class="invoice-header">
 
 
-                <!--
-                    LAYER 1
-                    Banner / background
+                <div class="header-banner"></div>
 
-                    This comes FIRST in the DOM.
-                -->
-
-                <div class="header-banner">
-
-                </div>
-
-
-
-                <!--
-                    LAYER 2
-                    Image on top of banner
-
-                    This comes AFTER the banner,
-                    so it paints on top WITHOUT z-index.
-                -->
 
                 <img
                     src="header-overlay.1.jpg"
@@ -562,18 +659,10 @@
                 >
 
 
-
-                <!--
-                    Header content
-                -->
-
                 <div class="invoice-title">
                     INVOICE
                 </div>
 
-
-
-                <!-- QR NUMBER -->
 
                 <div
                     class="qr-number"
@@ -583,13 +672,11 @@
                 </div>
 
 
-
-                <!-- QR -->
+                <!-- QR CODE -->
 
                 <div class="qr-wrapper">
 
-                    <div id="qr">
-                    </div>
+                    <div id="qr"></div>
 
                 </div>
 
@@ -599,13 +686,11 @@
 
 
             <!-- =================================================
-                 META INFORMATION
+                 META
             ================================================== -->
 
             <section class="invoice-meta">
 
-
-                <!-- BILLED TO -->
 
                 <div class="meta-column">
 
@@ -613,14 +698,12 @@
                         BILLED TO
                     </div>
 
-
                     <div
                         class="meta-value"
                         id="outClient"
                     >
                         Client Name
                     </div>
-
 
                     <div
                         class="meta-small"
@@ -648,15 +731,11 @@
                 </div>
 
 
-
-                <!-- PROJECT -->
-
                 <div class="meta-column">
 
                     <div class="meta-label">
                         PROJECT
                     </div>
-
 
                     <div
                         class="meta-value"
@@ -665,19 +744,14 @@
                         Project Name
                     </div>
 
-
                 </div>
 
-
-
-                <!-- DATE -->
 
                 <div class="meta-column issued-column">
 
                     <div class="meta-label">
                         ISSUED
                     </div>
-
 
                     <div
                         class="meta-value"
@@ -694,7 +768,7 @@
 
 
             <!-- =================================================
-                 DELIVERABLES
+                 DELIVERABLE TABLE
             ================================================== -->
 
             <section class="invoice-deliverables">
@@ -706,6 +780,7 @@
 
 
                 <table>
+
 
                     <thead>
 
@@ -736,10 +811,8 @@
                     </thead>
 
 
-                    <tbody
-                        id="deliverableRows"
-                    >
-                    </tbody>
+                    <tbody id="deliverableRows"></tbody>
+
 
                 </table>
 
@@ -779,6 +852,7 @@
                     <div
                         class="summary-row"
                         id="discountRow"
+                        hidden
                     >
 
                         <span id="discountLabel">
@@ -808,13 +882,11 @@
                 </div>
 
 
-
                 <div class="total-box">
 
                     <div class="total-label">
                         TOTAL DUE
                     </div>
-
 
                     <div
                         class="total-amount"
@@ -843,7 +915,6 @@
                         PAYMENT TERMS
                     </div>
 
-
                     <div
                         class="footer-value"
                         id="outTerms"
@@ -854,13 +925,11 @@
                 </div>
 
 
-
                 <div class="footer-column">
 
                     <div class="footer-label">
                         PROJECT
                     </div>
-
 
                     <div
                         class="footer-value"
@@ -872,10 +941,8 @@
                 </div>
 
 
-
                 <div
-                    class="footer-column
-                           footer-brand-column"
+                    class="footer-column footer-brand-column"
                 >
 
                     <div class="footer-brand">
@@ -883,6 +950,7 @@
                         <span id="outBrandName">
                             THINKLIMITLESS
                         </span>
+
 
                         <img
                             id="outBrandLogo"
@@ -908,7 +976,9 @@
 
 
 
-            <!-- BOTTOM -->
+            <!-- =================================================
+                 BOTTOM FOOTER
+            ================================================== -->
 
             <div class="bottom-footer">
 
@@ -929,14 +999,14 @@
 
     </main>
 
-
 </div>
 
 
 
-<!-- =====================================================
+<!-- =========================================================
      QR CODE LIBRARY
-====================================================== -->
+     LOAD ONCE ONLY
+========================================================= -->
 
 <script
     src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
@@ -944,13 +1014,22 @@
 
 
 
-<!-- =====================================================
-     JAVASCRIPT
-====================================================== -->
+<!-- =========================================================
+     SUPABASE
+========================================================= -->
 
-<script src="script.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
+
+
+
+<!-- =========================================================
+     YOUR JAVASCRIPT
+========================================================= -->
+
+<script src="script.js?v=3"></script>
 
 
 </body>
-
 </html>
