@@ -1,132 +1,426 @@
 /* =========================================================
    INVOICE BUILDER
+   Live Editing + Calculations + QR + Supabase
 ========================================================= */
 
 
 /* =========================================================
-   DOM HELPER
+   1. SUPABASE
 ========================================================= */
 
-const $ = (id) => {
+const SUPABASE_URL = "https://jilmmclikggptpnsibvy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE";
 
-    return document.getElementById(id);
+let supabaseClient = null;
 
-};
+try {
 
-
-/* =========================================================
-   DEFAULT INVOICE NUMBER
-========================================================= */
-
-const DEFAULT_INVOICE =
-    "INV-TL-2026-001";
-
-
-/* =========================================================
-   DELIVERABLE DATA
-========================================================= */
-
-let deliverables = [
-
-    {
-        name:
-            "CUSTOM AI VIDEOS",
-
-        description:
-            "Custom AI-generated video production",
-
-        qty:
-            8,
-
-        amount:
-            20000,
-
-        status:
-            "PENDING"
-    },
-
-
-    {
-        name:
-            "STATIC META POSTS",
-
-        description:
-            "Custom static creative for Meta",
-
-        qty:
-            3,
-
-        amount:
-            3000,
-
-        status:
-            "PAID"
+    if (window.supabase?.createClient) {
+        supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
     }
 
-];
+} catch (error) {
 
+    console.error("Supabase initialization failed:", error);
+
+}
+
+
+/* =========================================================
+   2. SETTINGS
+========================================================= */
+
+const DEFAULT_INVOICE = "INV-TL-2026-001";
+
+/*
+   QR CODE DESTINATION
+*/
+const THINKLIMITLESS_URL =
+    "https://www.thinklimitless.co/";
+
+
+/* =========================================================
+   3. VARIABLES
+========================================================= */
+
+let deliverables = [];
 
 let brandLogoData = "";
 
+const AUTH_ROLE_KEY = "invoice_dashboard_role";
+
+const AUTH_PASSWORDS = {
+    admin: "limitless.admin",
+    employee: "limitless.employee"
+};
+
+let currentRole =
+    localStorage.getItem(AUTH_ROLE_KEY) || null;
+
 
 /* =========================================================
-   FORMAT MONEY
+   4. DOM HELPER
+========================================================= */
+
+function $(id) {
+    return document.getElementById(id);
+}
+
+
+function showLoginScreen() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
+
+    if (authScreen) {
+        authScreen.classList.remove("hidden");
+    }
+
+    if (landingScreen) {
+        landingScreen.classList.add("hidden");
+    }
+
+    if (app) {
+        app.classList.add("hidden");
+    }
+}
+
+
+function showLandingScreen() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
+
+    if (authScreen) {
+        authScreen.classList.add("hidden");
+    }
+
+    if (landingScreen) {
+        landingScreen.classList.remove("hidden");
+    }
+
+    if (app) {
+        app.classList.add("hidden");
+    }
+}
+
+
+function showDashboard() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
+
+    if (authScreen) {
+        authScreen.classList.add("hidden");
+    }
+
+    if (landingScreen) {
+        landingScreen.classList.add("hidden");
+    }
+
+    if (app) {
+        app.classList.remove("hidden");
+    }
+}
+
+
+function updateRoleAccess() {
+    const role = localStorage.getItem(AUTH_ROLE_KEY);
+
+    if (!role) {
+        showLoginScreen();
+        return;
+    }
+
+    const isAdmin = role === "admin";
+
+    const paymentStatus = $("paymentStatus");
+    const hasDiscount = $("hasDiscount");
+    const discount = $("discount");
+    const discountType = $("discountType");
+    const tax = $("tax");
+    const fee = $("fee");
+    const addDeliverable = $("addDeliverable");
+
+    if (paymentStatus) {
+        paymentStatus.disabled = !isAdmin;
+    }
+
+    if (hasDiscount) {
+        hasDiscount.disabled = !isAdmin;
+    }
+
+    if (discount) {
+        discount.disabled = !isAdmin;
+    }
+
+    if (discountType) {
+        discountType.disabled = !isAdmin;
+    }
+
+    if (tax) {
+        tax.disabled = !isAdmin;
+    }
+
+    if (fee) {
+        fee.readOnly = !isAdmin;
+    }
+
+    if (addDeliverable) {
+        addDeliverable.disabled = false;
+    }
+
+    document.querySelectorAll(".deliverable-editor input[type='number']").forEach(function (input) {
+        const parent = input.closest(".two-columns");
+        if (!parent) return;
+
+        const numbers = parent.querySelectorAll("input[type='number']");
+        const isAmountField = numbers.length > 1 && input === numbers[1];
+
+        if (isAmountField) {
+            input.disabled = !isAdmin;
+        } else {
+            input.disabled = false;
+        }
+    });
+
+    document.querySelectorAll(".deliverable-editor select").forEach(function (select) {
+        select.disabled = !isAdmin;
+    });
+
+    document.querySelectorAll(".remove-deliverable").forEach(function (button) {
+        button.disabled = !isAdmin;
+    });
+}
+
+
+function loginWithRole(role) {
+    const password = $("loginPassword")?.value || "";
+    const expectedPassword = AUTH_PASSWORDS[role];
+    const loginError = $("loginError");
+
+    if (!expectedPassword) {
+        return;
+    }
+
+    if (password !== expectedPassword) {
+        if (loginError) {
+            loginError.textContent = "Incorrect password.";
+        }
+        return;
+    }
+
+    currentRole = role;
+    localStorage.setItem(AUTH_ROLE_KEY, role);
+
+    if (loginError) {
+        loginError.textContent = "";
+    }
+
+    showLandingScreen();
+    updateRoleAccess();
+}
+
+
+function setupAuth() {
+    const authButtons = document.querySelectorAll(".auth-role");
+
+    authButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const role = button.dataset.role;
+
+            authButtons.forEach(function (item) {
+                item.classList.toggle("active", item === button);
+            });
+
+            if (role) {
+                $("loginPassword")?.focus();
+            }
+        });
+    });
+
+    $("loginBtn")?.addEventListener("click", function () {
+        const selectedRole = document.querySelector(".auth-role.active")?.dataset.role || "admin";
+        loginWithRole(selectedRole);
+    });
+
+    $("logoutBtn")?.addEventListener("click", function () {
+        localStorage.removeItem(AUTH_ROLE_KEY);
+        currentRole = null;
+        if ($("loginPassword")) {
+            $("loginPassword").value = "";
+        }
+        showLoginScreen();
+    });
+
+    $("landingLogoutBtn")?.addEventListener("click", function () {
+        localStorage.removeItem(AUTH_ROLE_KEY);
+        currentRole = null;
+        if ($("loginPassword")) {
+            $("loginPassword").value = "";
+        }
+        showLoginScreen();
+    });
+
+    $("newInvoiceBtn")?.addEventListener("click", function () {
+        showDashboard();
+        updateRoleAccess();
+        if ($("invoiceNo")) {
+            $("invoiceNo").value = "";
+        }
+    });
+
+    $("openInvoiceBtn")?.addEventListener("click", async function () {
+        const invoiceNumber = ($("openInvoiceNumber")?.value || "").trim();
+        const errorBox = $("landingError");
+
+        if (!invoiceNumber) {
+            if (errorBox) {
+                errorBox.textContent = "Please enter an invoice number.";
+            }
+            return;
+        }
+
+        if (!supabaseClient) {
+            if (errorBox) {
+                errorBox.textContent = "Database connection is not configured.";
+            }
+            return;
+        }
+
+        try {
+            const { data, error } = await supabaseClient
+                .from("invoices")
+                .select("*")
+                .eq("invoice_number", invoiceNumber)
+                .maybeSingle();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                if (errorBox) {
+                    errorBox.textContent = "No invoice found with that number.";
+                }
+                return;
+            }
+
+            applySavedInvoice(data);
+            showDashboard();
+            updateRoleAccess();
+            if (errorBox) {
+                errorBox.textContent = "";
+            }
+        } catch (error) {
+            console.error("OPEN INVOICE ERROR:", error);
+            if (errorBox) {
+                errorBox.textContent = "Unable to load this invoice.";
+            }
+        }
+    });
+
+    if (!localStorage.getItem(AUTH_ROLE_KEY)) {
+        showLoginScreen();
+    } else {
+        showLandingScreen();
+        updateRoleAccess();
+    }
+}
+
+
+function applySavedInvoice(invoice) {
+    if (!invoice) {
+        return;
+    }
+
+    const assign = function (id, value) {
+        const field = $(id);
+        if (!field) return;
+        if (field.type === "checkbox") {
+            field.checked = Boolean(value);
+            return;
+        }
+        field.value = value ?? "";
+    };
+
+    assign("invoiceNo", invoice.invoice_number || "");
+    assign("invoiceDate", invoice.invoice_date || "");
+    assign("dueDate", invoice.due_date || "");
+    assign("brandName", invoice.company_name || "");
+    assign("client", invoice.client_name || "");
+    assign("address", invoice.client_address || "");
+    assign("terms", invoice.payment_terms || "");
+    assign("paymentStatus", invoice.payment_status || "DUE");
+    assign("tax", invoice.tax ?? 0);
+    assign("project", invoice.project || "");
+    assign("footerLeft", invoice.footer_text || "");
+    assign("brandTagline", invoice.brand_tagline || "");
+    assign("currency", invoice.currency || "PKR");
+    assign("discount", invoice.discount ?? 0);
+    assign("discountType", invoice.discount_type || "percent");
+
+    const storedDeliverables = Array.isArray(invoice.items) ? invoice.items : [];
+    deliverables = storedDeliverables.map(function (item) {
+        return {
+            name: item.name || "",
+            description: item.description || "",
+            qty: Number(item.qty) || 0,
+            amount: Number(item.amount) || 0,
+            status: item.status || "PENDING"
+        };
+    });
+
+    renderDeliverableEditors();
+    updateInvoice();
+}
+
+
+/* =========================================================
+   5. MONEY FORMAT
 ========================================================= */
 
 function formatMoney(value) {
 
-    return new Intl.NumberFormat(
-        "en-US",
-        {
-            maximumFractionDigits: 0
-        }
-    ).format(
-        Math.round(value || 0)
+    return new Intl.NumberFormat("en-US", {
+        maximumFractionDigits: 0
+    }).format(
+        Math.round(Number(value) || 0)
     );
 
 }
 
 
 /* =========================================================
-   FORMAT DATE
+   6. DATE FORMAT
 ========================================================= */
 
 function formatDate(value) {
 
     if (!value) {
-
-        return "17 AUG 2026";
-
+        return "";
     }
 
-
     const date =
-        new Date(
-            value + "T00:00:00"
-        );
+        new Date(value + "T00:00:00");
 
-
-    return date
-        .toLocaleDateString(
-            "en-GB",
-            {
-                day:
-                    "2-digit",
-
-                month:
-                    "short",
-
-                year:
-                    "numeric"
-            }
-        )
-        .toUpperCase();
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    ).toUpperCase();
 
 }
 
 
 /* =========================================================
-   HTML ESCAPE
+   7. HTML ESCAPE
 ========================================================= */
 
 function escapeHTML(value) {
@@ -134,25 +428,14 @@ function escapeHTML(value) {
     return String(value ?? "")
         .replace(
             /[&<>"']/g,
-            function(character) {
+            function (character) {
 
                 return {
-
-                    "&":
-                        "&amp;",
-
-                    "<":
-                        "&lt;",
-
-                    ">":
-                        "&gt;",
-
-                    '"':
-                        "&quot;",
-
-                    "'":
-                        "&#039;"
-
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#039;"
                 }[character];
 
             }
@@ -162,21 +445,18 @@ function escapeHTML(value) {
 
 
 /* =========================================================
-   GET CURRENCY
+   8. GET CURRENCY
 ========================================================= */
 
 function getCurrency() {
 
-    return (
-        $("currency")?.value ||
-        "PKR"
-    );
+    return $("currency")?.value || "PKR";
 
 }
 
 
 /* =========================================================
-   RENDER EDITABLE DELIVERABLES
+   9. DELIVERABLE EDITORS
 ========================================================= */
 
 function renderDeliverableEditors() {
@@ -184,70 +464,90 @@ function renderDeliverableEditors() {
     const container =
         $("deliverableEditors");
 
-
     if (!container) {
-
         return;
-
     }
 
-
     container.innerHTML =
-        deliverables
-            .map(
-                function(item, index) {
+        deliverables.map(
+            function (item, index) {
 
-                    return `
+                return `
 
-                        <div
-                            class="deliverable-editor"
-                        >
+                    <div class="deliverable-editor">
 
-                            <div
-                                class="deliverable-head"
+                        <div class="deliverable-head">
+
+                            <span class="deliverable-number">
+
+                                DELIVERABLE
+                                ${String(index + 1).padStart(2, "0")}
+
+                            </span>
+
+                            <button
+                                type="button"
+                                class="remove-deliverable"
+                                onclick="removeDeliverable(${index})"
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label>Name</label>
+
+                            <input
+                                type="text"
+                                value="${escapeHTML(item.name)}"
+                                oninput="
+                                    updateDeliverable(
+                                        ${index},
+                                        'name',
+                                        this.value
+                                    )
+                                "
                             >
 
-                                <span
-                                    class="deliverable-number"
-                                >
-                                    DELIVERABLE
-                                    ${String(
-                                        index + 1
-                                    ).padStart(
-                                        2,
-                                        "0"
-                                    )}
-                                </span>
+                        </div>
 
 
-                                <button
-                                    type="button"
-                                    class="remove-deliverable"
-                                    onclick="removeDeliverable(${index})"
-                                >
-                                    ×
-                                </button>
+                        <div class="form-field">
 
-                            </div>
+                            <label>Description</label>
 
-
-                            <div
-                                class="form-field"
+                            <input
+                                type="text"
+                                value="${escapeHTML(item.description)}"
+                                oninput="
+                                    updateDeliverable(
+                                        ${index},
+                                        'description',
+                                        this.value
+                                    )
+                                "
                             >
 
-                                <label>
-                                    Name
-                                </label>
+                        </div>
+
+
+                        <div class="two-columns">
+
+                            <div class="form-field">
+
+                                <label>Qty</label>
 
                                 <input
-                                    type="text"
-                                    value="${escapeHTML(
-                                        item.name
-                                    )}"
+                                    type="number"
+                                    min="0"
+                                    value="${item.qty}"
                                     oninput="
                                         updateDeliverable(
                                             ${index},
-                                            'name',
+                                            'qty',
                                             this.value
                                         )
                                     "
@@ -256,126 +556,88 @@ function renderDeliverableEditors() {
                             </div>
 
 
-                            <div
-                                class="form-field"
-                            >
+                            <div class="form-field">
 
-                                <label>
-                                    Description
-                                </label>
+                                <label>Amount</label>
 
                                 <input
-                                    type="text"
-                                    value="${escapeHTML(
-                                        item.description
-                                    )}"
+                                    type="number"
+                                    min="0"
+                                    value="${item.amount}"
                                     oninput="
                                         updateDeliverable(
                                             ${index},
-                                            'description',
+                                            'amount',
                                             this.value
                                         )
                                     "
                                 >
-
-                            </div>
-
-
-                            <div
-                                class="two-columns"
-                            >
-
-                                <div
-                                    class="form-field"
-                                >
-
-                                    <label>
-                                        Qty
-                                    </label>
-
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value="${item.qty}"
-                                        oninput="
-                                            updateDeliverable(
-                                                ${index},
-                                                'qty',
-                                                this.value
-                                            )
-                                        "
-                                    >
-
-                                </div>
-
-
-                                <div
-                                    class="form-field"
-                                >
-
-                                    <label>
-                                        Amount
-                                    </label>
-
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value="${item.amount}"
-                                        oninput="
-                                            updateDeliverable(
-                                                ${index},
-                                                'amount',
-                                                this.value
-                                            )
-                                        "
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            <div
-                                class="form-field"
-                            >
-
-                                <label>
-                                    Payment Status
-                                </label>
-
-                                <select
-                                    onchange="
-                                        updateDeliverable(
-                                            ${index},
-                                            'status',
-                                            this.value
-                                        )
-                                    "
-                                >
-                                    <option value="PENDING" ${item.status === "PENDING" ? "selected" : ""}>
-                                        Pending
-                                    </option>
-                                    <option value="PAID" ${item.status === "PAID" ? "selected" : ""}>
-                                        Paid
-                                    </option>
-                                    <option value="PARTIAL" ${item.status === "PARTIAL" ? "selected" : ""}>
-                                        Partial
-                                    </option>
-                                    <option value="OVERDUE" ${item.status === "OVERDUE" ? "selected" : ""}>
-                                        Overdue
-                                    </option>
-                                </select>
 
                             </div>
 
                         </div>
 
-                    `;
 
-                }
-            )
-            .join("");
+                        <div class="form-field">
 
+                            <label>Payment Status</label>
+
+                            <select
+                                onchange="
+                                    updateDeliverable(
+                                        ${index},
+                                        'status',
+                                        this.value
+                                    )
+                                "
+                            >
+
+                                <option
+                                    value="PENDING"
+                                    ${item.status === "PENDING"
+                                        ? "selected"
+                                        : ""}
+                                >
+                                    Pending
+                                </option>
+
+                                <option
+                                    value="PAID"
+                                    ${item.status === "PAID"
+                                        ? "selected"
+                                        : ""}
+                                >
+                                    Paid
+                                </option>
+
+                                <option
+                                    value="PARTIAL"
+                                    ${item.status === "PARTIAL"
+                                        ? "selected"
+                                        : ""}
+                                >
+                                    Partial
+                                </option>
+
+                                <option
+                                    value="OVERDUE"
+                                    ${item.status === "OVERDUE"
+                                        ? "selected"
+                                        : ""}
+                                >
+                                    Overdue
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        ).join("");
 
     renderDeliverableTable();
 
@@ -383,7 +645,7 @@ function renderDeliverableEditors() {
 
 
 /* =========================================================
-   UPDATE DELIVERABLE
+   10. UPDATE DELIVERABLE
 ========================================================= */
 
 function updateDeliverable(
@@ -393,9 +655,7 @@ function updateDeliverable(
 ) {
 
     if (!deliverables[index]) {
-
         return;
-
     }
 
 
@@ -407,9 +667,7 @@ function updateDeliverable(
         deliverables[index][property] =
             Number(value) || 0;
 
-    }
-
-    else {
+    } else {
 
         deliverables[index][property] =
             value;
@@ -419,10 +677,29 @@ function updateDeliverable(
 
     renderDeliverableTable();
 
+    updateInvoice();
 
-    /*
-       Update totals if required
-    */
+}
+
+
+/* =========================================================
+   11. ADD DELIVERABLE
+========================================================= */
+
+function addDeliverable() {
+
+    deliverables.push({
+
+        name: "",
+        description: "",
+        qty: 1,
+        amount: 0,
+        status: "PENDING"
+
+    });
+
+
+    renderDeliverableEditors();
 
     updateInvoice();
 
@@ -430,15 +707,13 @@ function updateDeliverable(
 
 
 /* =========================================================
-   REMOVE DELIVERABLE
+   12. REMOVE DELIVERABLE
 ========================================================= */
 
 function removeDeliverable(index) {
 
     if (!deliverables[index]) {
-
         return;
-
     }
 
 
@@ -450,42 +725,13 @@ function removeDeliverable(index) {
 
     renderDeliverableEditors();
 
-}
-
-
-/* =========================================================
-   ADD DELIVERABLE
-========================================================= */
-
-function addDeliverable() {
-
-    deliverables.push({
-
-        name:
-            "NEW DELIVERABLE",
-
-        description:
-            "Description",
-
-        qty:
-            1,
-
-        amount:
-            0,
-
-        status:
-            "PENDING"
-
-    });
-
-
-    renderDeliverableEditors();
+    updateInvoice();
 
 }
 
 
 /* =========================================================
-   RENDER INVOICE TABLE
+   13. RENDER DELIVERABLE TABLE
 ========================================================= */
 
 function renderDeliverableTable() {
@@ -493,11 +739,8 @@ function renderDeliverableTable() {
     const table =
         $("deliverableRows");
 
-
     if (!table) {
-
         return;
-
     }
 
 
@@ -506,229 +749,392 @@ function renderDeliverableTable() {
 
 
     table.innerHTML =
-        deliverables
-            .map(
-                function(item, index) {
+        deliverables.map(
+            function (item, index) {
 
-                    return `
+                return `
 
-                        <tr>
+                    <tr>
 
-                            <td>
+                        <td>
 
-                                <span
-                                    class="deliverable-name"
-                                >
+                            <span class="deliverable-name">
 
-                                    ${String(
-                                        index + 1
-                                    ).padStart(
-                                        2,
-                                        "0"
-                                    )}
+                                ${String(index + 1)
+                                    .padStart(2, "0")}
 
-                                    &nbsp;
-
-                                    ${escapeHTML(
-                                        item.name ||
-                                        "DELIVERABLE"
-                                    )}
-
-                                </span>
-
-                            </td>
-
-
-                            <td>
+                                &nbsp;
 
                                 ${escapeHTML(
-                                    item.description ||
-                                    ""
+                                    item.name ||
+                                    "DELIVERABLE"
                                 )}
 
-                            </td>
+                            </span>
+
+                        </td>
 
 
-                            <td>
+                        <td>
 
-                                ${item.qty || 0}
+                            ${escapeHTML(
+                                item.description || ""
+                            )}
 
-                            </td>
-
-
-                            <td>
-
-                                ${currency}
-
-                                ${formatMoney(
-                                    item.amount
-                                )}
-
-                            </td>
+                        </td>
 
 
-                            <td>
+                        <td>
 
-                                <span
-                                    class="deliverable-status ${(
-                                        item.status || "PENDING"
-                                    ).toLowerCase()}"
-                                >
-                                    ${(item.status || "PENDING").toUpperCase()}
-                                </span>
+                            ${item.qty || 0}
 
-                            </td>
+                        </td>
 
-                        </tr>
 
-                    `;
+                        <td>
 
-                }
-            )
-            .join("");
+                            ${currency}
+                            ${formatMoney(item.amount)}
+
+                        </td>
+
+
+                        <td>
+
+                            <span
+                                class="
+                                    deliverable-status
+                                    ${(item.status ||
+                                        "PENDING")
+                                        .toLowerCase()}
+                                "
+                            >
+
+                                ${(item.status ||
+                                    "PENDING")
+                                    .toUpperCase()}
+
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        ).join("");
 
 }
 
 
 /* =========================================================
-   GENERATE QR
+   14. CALCULATE TOTALS
 ========================================================= */
 
-function generateQR(
-    invoiceNumber
-) {
+function calculateTotals() {
 
-    const qrContainer =
-        $("qr");
+    const subtotal =
+        deliverables.reduce(
+            function (total, item) {
 
+                return total +
 
-    if (!qrContainer) {
+                    (
+                        Number(item.qty) || 0
+                    )
 
-        return;
+                    *
 
-    }
+                    (
+                        Number(item.amount) || 0
+                    );
 
-
-    /*
-       Delete old QR
-    */
-
-    qrContainer.innerHTML =
-        "";
-
-
-    /*
-       Use the company website
-       as QR destination
-    */
-
-    const qrValue =
-        "https://www.thinklimitless.co/";
-
-
-    /*
-       Check QR library
-    */
-
-    if (
-        typeof QRCode ===
-        "undefined"
-    ) {
-
-        console.warn(
-            "QRCode.js has not loaded."
+            },
+            0
         );
 
-        return;
 
-    }
+    let discount = 0;
 
 
-    /*
-       Generate QR
-    */
+    const hasDiscount =
+        $("hasDiscount")?.checked ||
+        false;
 
-    new QRCode(
-        qrContainer,
-        {
 
-            text:
-                qrValue,
+    if (hasDiscount) {
 
-            width:
-                96,
+        const discountValue =
+            Number(
+                $("discount")?.value
+            ) || 0;
 
-            height:
-                96,
 
-            colorDark:
-                "#111111",
+        const discountType =
+            $("discountType")?.value ||
+            "percent";
 
-            colorLight:
-                "#ffffff",
 
-            correctLevel:
-                QRCode.CorrectLevel.H
+        if (
+            discountType === "percent"
+        ) {
+
+            discount =
+                subtotal *
+                (
+                    discountValue / 100
+                );
+
+        } else {
+
+            discount =
+                discountValue;
 
         }
-    );
+
+
+        discount =
+            Math.min(
+                discount,
+                subtotal
+            );
+
+    }
+
+
+    const tax =
+        Number(
+            $("tax")?.value
+        ) || 0;
+
+
+    const afterDiscount =
+        Math.max(
+            subtotal - discount,
+            0
+        );
+
+
+    const taxAmount =
+        afterDiscount *
+        (
+            tax / 100
+        );
+
+
+    const total =
+        afterDiscount +
+        taxAmount;
+
+
+    return {
+
+        subtotal,
+        discount,
+        tax,
+        taxAmount,
+        total
+
+    };
 
 }
 
 
 /* =========================================================
-   UPDATE QR
+   15. UPDATE COMMERCIAL
 ========================================================= */
 
-function updateQR() {
+function updateCommercial() {
 
-    const input =
-        $("invoiceNo");
-
-
-    let invoiceNumber =
-        input?.value.trim();
+    const totals =
+        calculateTotals();
 
 
-    /*
-       Use default only for
-       preview if empty
-    */
-
-    if (!invoiceNumber) {
-
-        invoiceNumber =
-            DEFAULT_INVOICE;
-
-    }
+    const currency =
+        getCurrency();
 
 
-    /*
-       Display invoice number
-       above QR
-    */
+    /* Original fee */
 
-    if ($("qrNumber")) {
+    if ($("fee")) {
 
-        $("qrNumber").textContent =
-            invoiceNumber;
+        $("fee").value =
+            Math.round(
+                totals.subtotal
+            );
 
     }
 
 
-    /*
-       Generate unique QR
-    */
+    if ($("outFee")) {
 
-    generateQR(
-        invoiceNumber
-    );
+        $("outFee").textContent =
+            currency +
+            " " +
+            formatMoney(
+                totals.subtotal
+            );
+
+    }
+
+
+    /* Discount row */
+
+    if ($("discountRow")) {
+
+        $("discountRow").hidden =
+            !$("hasDiscount")?.checked;
+
+    }
+
+
+    if ($("discountLabel")) {
+
+        const type =
+            $("discountType")?.value ||
+            "percent";
+
+
+        const value =
+            Number(
+                $("discount")?.value
+            ) || 0;
+
+
+        $("discountLabel").textContent =
+            type === "percent"
+
+                ? value + "% discount"
+
+                : "Discount";
+
+    }
+
+
+    if ($("outDiscount")) {
+
+        $("outDiscount").textContent =
+            "− " +
+            currency +
+            " " +
+            formatMoney(
+                totals.discount
+            );
+
+    }
+
+
+    /* Tax */
+
+    if ($("taxLabel")) {
+
+        $("taxLabel").textContent =
+            (
+                totals.tax || 0
+            ) +
+            "% tax";
+
+    }
+
+
+    if ($("outTax")) {
+
+        $("outTax").textContent =
+            "+ " +
+            currency +
+            " " +
+            formatMoney(
+                totals.taxAmount
+            );
+
+    }
+
+
+    /* Total */
+
+    if ($("outTotal")) {
+
+        $("outTotal").textContent =
+            currency +
+            " " +
+            formatMoney(
+                totals.total
+            );
+
+    }
 
 }
 
 
 /* =========================================================
-   UPDATE CLIENT
+   16. DISCOUNT UI
+========================================================= */
+
+function updateDiscountUI() {
+
+    const enabled =
+        $("hasDiscount")?.checked ||
+        false;
+
+
+    if ($("discountBlock")) {
+
+        $("discountBlock").hidden =
+            !enabled;
+
+    }
+
+
+    const type =
+        $("discountType")?.value ||
+        "percent";
+
+
+    if ($("discountInputLabel")) {
+
+        $("discountInputLabel").textContent =
+            type === "percent"
+
+                ? "Discount %"
+
+                : "Discount Amount";
+
+    }
+
+
+    if ($("discount")) {
+
+        if (type === "percent") {
+
+            $("discount").max =
+                "100";
+
+        } else {
+
+            $("discount")
+                .removeAttribute("max");
+
+        }
+
+    }
+
+
+    updateCommercial();
+
+}
+
+
+function updateDiscountAndInvoice() {
+
+    updateDiscountUI();
+    updateInvoice();
+
+}
+
+
+/* =========================================================
+   17. CLIENT
 ========================================================= */
 
 function updateClient() {
@@ -758,11 +1164,14 @@ function updateClient() {
 
     }
 
+
+    updateProject();
+
 }
 
 
 /* =========================================================
-   UPDATE PROJECT
+   18. PROJECT
 ========================================================= */
 
 function updateProject() {
@@ -777,31 +1186,9 @@ function updateProject() {
         "CLIENT";
 
 
-    const footerProject =
-        $("footerProject");
-
-
-    if (footerProject) {
-
-        footerProject.value =
-            footerProject.value.trim() ||
-            project;
-
-    }
-
-
     if ($("outProject")) {
 
         $("outProject").textContent =
-            project;
-
-    }
-
-
-    if ($("outFooterProject")) {
-
-        $("outFooterProject").textContent =
-            footerProject?.value.trim() ||
             project;
 
     }
@@ -822,7 +1209,7 @@ function updateProject() {
 
 
 /* =========================================================
-   UPDATE PAYMENT STATUS
+   19. PAYMENT STATUS
 ========================================================= */
 
 function updatePaymentStatus() {
@@ -837,9 +1224,7 @@ function updatePaymentStatus() {
 
 
     if (!output) {
-
         return;
-
     }
 
 
@@ -847,20 +1232,12 @@ function updatePaymentStatus() {
         status;
 
 
-    /*
-       Reset status classes
-    */
-
     output.classList.remove(
         "paid",
         "pending",
         "due"
     );
 
-
-    /*
-       Apply current class
-    */
 
     output.classList.add(
         status.toLowerCase()
@@ -870,23 +1247,17 @@ function updatePaymentStatus() {
 
 
 /* =========================================================
-   UPDATE DATE
+   20. INVOICE DATE
 ========================================================= */
 
 function updateInvoiceDate() {
 
-    const output =
-        $("outDate");
-
-
-    if (!output) {
-
+    if (!$("outDate")) {
         return;
-
     }
 
 
-    output.textContent =
+    $("outDate").textContent =
         formatDate(
             $("invoiceDate")?.value
         );
@@ -895,15 +1266,45 @@ function updateInvoiceDate() {
 
 
 /* =========================================================
-   UPDATE PAYMENT TERMS
+   21. INVOICE NUMBER
+========================================================= */
+
+function updateInvoiceNumber() {
+
+    const invoiceNumber =
+        $("invoiceNo")?.value.trim() ||
+        DEFAULT_INVOICE;
+
+
+    if ($("qrNumber")) {
+
+        $("qrNumber").textContent =
+            invoiceNumber;
+
+    }
+
+}
+
+
+/* =========================================================
+    26. UPDATE QR LABEL
+========================================================= */
+function updateQR() {
+
+    // QR destination remains static; only the invoice number label updates here.
+    updateInvoiceNumber();
+
+}
+
+
+/* =========================================================
+   22. PAYMENT TERMS
 ========================================================= */
 
 function updatePaymentTerms() {
 
     if (!$("outTerms")) {
-
         return;
-
     }
 
 
@@ -915,7 +1316,7 @@ function updatePaymentTerms() {
 
 
 /* =========================================================
-   UPDATE BRANDING
+   23. BRANDING
 ========================================================= */
 
 function updateBranding() {
@@ -924,12 +1325,10 @@ function updateBranding() {
         $("brandName")?.value.trim() ||
         "THINKLIMITLESS";
 
+
     const brandTagline =
         $("brandTagline")?.value.trim() ||
         "AI · MEDIA · CREATIVITY";
-
-    const logoPreview =
-        $("outBrandLogo");
 
 
     if ($("outBrandName")) {
@@ -948,30 +1347,33 @@ function updateBranding() {
     }
 
 
-    if (logoPreview) {
+    const logo =
+        $("outBrandLogo");
 
-        if (brandLogoData) {
 
-            logoPreview.src =
-                brandLogoData;
+    if (!logo) {
+        return;
+    }
 
-            logoPreview.classList.add(
-                "has-image"
-            );
 
-        }
+    if (brandLogoData) {
 
-        else {
+        logo.src =
+            brandLogoData;
 
-            logoPreview.removeAttribute(
-                "src"
-            );
+        logo.classList.add(
+            "has-image"
+        );
 
-            logoPreview.classList.remove(
-                "has-image"
-            );
+    } else {
 
-        }
+        logo.removeAttribute(
+            "src"
+        );
+
+        logo.classList.remove(
+            "has-image"
+        );
 
     }
 
@@ -979,7 +1381,42 @@ function updateBranding() {
 
 
 /* =========================================================
-   UPDATE FOOTER LEFT
+   24. BRAND LOGO
+========================================================= */
+
+function handleBrandLogo(event) {
+
+    const file =
+        event.target.files?.[0];
+
+
+    if (!file) {
+        return;
+    }
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function () {
+
+            brandLogoData =
+                reader.result;
+
+            updateBranding();
+
+        };
+
+
+    reader.readAsDataURL(file);
+
+}
+
+
+/* =========================================================
+   25. FOOTER
 ========================================================= */
 
 function updateFooter() {
@@ -992,7 +1429,7 @@ function updateFooter() {
 
         $("outFooterLeft").textContent =
             footerText ||
-            "THINKLIMITLESS 2026";
+            "THINKLIMITLESS © 2026";
 
     }
 
@@ -1000,310 +1437,42 @@ function updateFooter() {
 
 
 /* =========================================================
-   DISCOUNT CONTROLS
+    27. GENERATE QR
 ========================================================= */
+function generateQR() {
 
-function updateDiscountControls() {
+    const qrContainer = $("qr");
 
-    const hasDiscount =
-        $("hasDiscount");
-
-    const discountBlock =
-        $("discountBlock");
-
-    const discountType =
-        $("discountType");
-
-    const discountInput =
-        $("discount");
-
-    const discountInputLabel =
-        $("discountInputLabel");
-
-    if (
-        !hasDiscount ||
-        !discountBlock ||
-        !discountType ||
-        !discountInput ||
-        !discountInputLabel
-    ) {
-
+    if (!qrContainer) {
+        console.error("QR container not found.");
         return;
-
     }
 
-    discountBlock.hidden =
-        !hasDiscount.checked;
+    qrContainer.innerHTML = "";
 
-    if (discountType.value === "amount") {
-
-        discountInputLabel.textContent =
-            "Discount Amount";
-
-        discountInput.max = "";
-
-    } else {
-
-        discountInputLabel.textContent =
-            "Discount %";
-
-        discountInput.max = "100";
-
+    if (typeof QRCode === "undefined") {
+        console.error("QRCode library not loaded.");
+        return;
     }
 
-    if ($("discountRow")) {
-
-        $("discountRow").style.display =
-            hasDiscount.checked ?
-                "flex" :
-                "none";
-
-    }
+    new QRCode(qrContainer, {
+        text: "https://www.thinklimitless.co/",
+        width: 96,
+        height: 96,
+        correctLevel: QRCode.CorrectLevel.H
+    });
 
 }
 
 
-/* =========================================================
-   DELIVERABLE TOTALS
-========================================================= */
-
-function getDeliverablesTotal() {
-
-    return deliverables.reduce(
-        function(total, item) {
-
-            return total +
-                (Number(item.amount) || 0);
-
-        },
-        0
-    );
-
-}
-
 
 /* =========================================================
-   CALCULATE COMMERCIAL TOTAL
-========================================================= */
-
-function calculateInvoice() {
-
-    const currency =
-        getCurrency();
-
-
-    const fee =
-        getDeliverablesTotal();
-
-
-    if ($("fee")) {
-
-        $("fee").value =
-            fee;
-
-    }
-
-
-    const hasDiscount =
-        $("hasDiscount")?.checked;
-
-    const discountType =
-        $("discountType")?.value ||
-        "percent";
-
-    let discount =
-        Number(
-            $("discount")?.value
-        ) || 0;
-
-
-    let tax =
-        Number(
-            $("tax")?.value
-        ) || 0;
-
-
-    if (!hasDiscount) {
-
-        discount = 0;
-
-    } else if (discountType === "percent") {
-
-        discount =
-            Math.min(
-                100,
-                Math.max(
-                    0,
-                    discount
-                )
-            );
-
-    } else {
-
-        discount =
-            Math.max(
-                0,
-                discount
-            );
-
-    }
-
-
-    tax =
-        Math.max(
-            0,
-            tax
-        );
-
-
-    /*
-       Calculate discount
-    */
-
-    const discountAmount =
-        hasDiscount &&
-        discountType === "percent"
-            ? fee *
-              discount /
-              100
-            : hasDiscount
-                ? Math.min(
-                    fee,
-                    discount
-                )
-                : 0;
-
-
-    /*
-       Calculate subtotal
-    */
-
-    const subtotal =
-        fee -
-        discountAmount;
-
-
-    /*
-       Calculate tax
-    */
-
-    const taxAmount =
-        subtotal *
-        tax /
-        100;
-
-
-    /*
-       Calculate total
-    */
-
-    const total =
-        subtotal +
-        taxAmount;
-
-
-    /*
-       Original fee
-    */
-
-    if ($("outFee")) {
-
-        $("outFee").textContent =
-            currency +
-            " " +
-            formatMoney(fee);
-
-    }
-
-
-    /*
-       Discount
-    */
-
-    if ($("discountLabel")) {
-
-        if (hasDiscount) {
-
-            $("discountLabel").textContent =
-                discountType === "amount"
-                    ? "Discount"
-                    : discount +
-                      "% discount";
-
-        } else {
-
-            $("discountLabel").textContent =
-                "0% discount";
-
-        }
-
-    }
-
-
-    if ($("outDiscount")) {
-
-        $("outDiscount").textContent =
-            hasDiscount
-                ? "− " +
-                  currency +
-                  " " +
-                  formatMoney(
-                      discountAmount
-                  )
-                : "− " +
-                  currency +
-                  " 0";
-
-    }
-
-
-    /*
-       Tax
-    */
-
-    if ($("taxLabel")) {
-
-        $("taxLabel").textContent =
-            tax +
-            "% tax";
-
-    }
-
-
-    if ($("outTax")) {
-
-        $("outTax").textContent =
-            "+ " +
-            currency +
-            " " +
-            formatMoney(
-                taxAmount
-            );
-
-    }
-
-
-    /*
-       Total
-    */
-
-    if ($("outTotal")) {
-
-        $("outTotal").textContent =
-            currency +
-            " " +
-            formatMoney(total);
-
-    }
-
-}
-
-
-/* =========================================================
-   MAIN UPDATE
+   28. UPDATE EVERYTHING
 ========================================================= */
 
 function updateInvoice() {
+
+    updateDiscountUI();
 
     updateClient();
 
@@ -1313,17 +1482,15 @@ function updateInvoice() {
 
     updateInvoiceDate();
 
+    updateInvoiceNumber();
+
     updatePaymentTerms();
 
     updateBranding();
 
     updateFooter();
 
-    updateDiscountControls();
-
-    calculateInvoice();
-
-    updateQR();
+    updateCommercial();
 
     renderDeliverableTable();
 
@@ -1331,119 +1498,285 @@ function updateInvoice() {
 
 
 /* =========================================================
-   CLEAR INVOICE
+   29. COLLECT INVOICE DATA
 ========================================================= */
 
-function clearInvoice() {
+function collectInvoiceData() {
 
+    const totals =
+        calculateTotals();
+
+
+    return {
+
+        invoice_number:
+            $("invoiceNo")?.value.trim() ||
+            DEFAULT_INVOICE,
+
+        invoice_date:
+            $("invoiceDate")?.value ||
+            null,
+
+        due_date:
+            $("dueDate")?.value ||
+            null,
+
+        company_name:
+            $("brandName")?.value.trim() ||
+            "",
+
+        client_name:
+            $("client")?.value.trim() ||
+            "",
+
+        client_address:
+            $("address")?.value.trim() ||
+            "",
+
+        client_email:
+            "",
+
+        payment_status:
+            $("paymentStatus")?.value ||
+            "DUE",
+
+        payment_terms:
+            $("terms")?.value.trim() ||
+            "",
+
+        company_email:
+            "",
+
+        website:
+            THINKLIMITLESS_URL,
+
+        division:
+            "",
+
+        discount:
+            totals.discount,
+
+        tax:
+            totals.tax,
+
+        subtotal:
+            totals.subtotal,
+
+        total:
+            totals.total,
+
+        items:
+            deliverables
+
+    };
+
+}
+
+
+/* =========================================================
+   30. SAVE INVOICE
+========================================================= */
+
+async function saveInvoice() {
+
+    if (!supabaseClient) {
+
+        alert(
+            "Unable to save invoice: database is not configured."
+        );
+
+        return;
+    }
+
+    try {
+
+        /*
+         * Get the REAL Supabase authenticated user.
+         */
+        const {
+            data: { user },
+            error: authError
+        } = await supabaseClient.auth.getUser();
+
+
+        if (authError) {
+
+            console.error(
+                "SUPABASE AUTH ERROR:",
+                authError
+            );
+
+            alert(
+                "Your login session is missing or expired. " +
+                "Please log in again."
+            );
+
+            return;
+        }
+
+
+        if (!user) {
+
+            alert(
+                "You must be logged in to save an invoice."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Get the user's actual profile/role.
+         */
+        const {
+            data: profile,
+            error: profileError
+        } = await supabaseClient
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+
+        if (profileError || !profile) {
+
+            console.error(
+                "PROFILE ERROR:",
+                profileError
+            );
+
+            alert(
+                "Your user profile could not be found. " +
+                "Please contact the administrator."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Collect invoice data.
+         */
+        const invoice =
+            collectInvoiceData();
+
+
+        /*
+         * Attach authenticated user's UUID.
+         *
+         * Your RLS policy checks:
+         * user_id = auth.uid()
+         */
+        const invoiceWithUser = {
+
+            ...invoice,
+
+            user_id: user.id
+
+        };
+
+
+        console.log(
+            "SAVING INVOICE FOR USER:",
+            user.id
+        );
+
+        console.log(
+            "USER ROLE:",
+            profile.role
+        );
+
+
+        /*
+         * IMPORTANT:
+         * Do NOT use .select() here.
+         */
+        const {
+            error
+        } = await supabaseClient
+            .from("invoices")
+            .insert([
+                invoiceWithUser
+            ]);
+
+
+        if (error) {
+
+            console.error(
+                "SAVE INVOICE ERROR:",
+                error
+            );
+
+            alert(
+                "Could not save invoice.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "INVOICE SAVED:",
+            invoiceWithUser
+        );
+
+
+        alert(
+            "Invoice saved successfully!"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "SAVE INVOICE FAILED:",
+            error
+        );
+
+        alert(
+            "Unable to save invoice. " +
+            "Please try logging in again."
+        );
+    }
+}
+/* =========================================================
+   31. RESET INVOICE
+========================================================= */
+
+function resetInvoice() {
 
     const fields = [
 
         "invoiceNo",
-
+        "invoiceDate",
+        "dueDate",
         "client",
-
         "address",
-
         "project",
-
         "terms",
-
         "footerLeft",
-
-        "footerProject",
-
         "brandName",
-
         "brandTagline"
 
     ];
 
 
     fields.forEach(
-        function(id) {
+        function (id) {
 
-            if ($(id)) {
+            const field =
+                $(id);
 
-                $(id).value =
-                    "";
+
+            if (field) {
+
+                field.value = "";
 
             }
 
         }
     );
-
-
-    const logoInput =
-        $("brandLogo");
-
-
-    if (logoInput) {
-
-        logoInput.value =
-            "";
-
-    }
-
-
-    brandLogoData =
-        "";
-
-
-    if ($("invoiceDate")) {
-
-        $("invoiceDate").value =
-            "";
-
-    }
-
-
-    if ($("dueDate")) {
-
-        $("dueDate").value =
-            "";
-
-    }
-
-
-    if ($("fee")) {
-
-        $("fee").value =
-            0;
-
-    }
-
-
-    if ($("hasDiscount")) {
-
-        $("hasDiscount").checked =
-            false;
-
-    }
-
-
-    if ($("discount")) {
-
-        $("discount").value =
-            0;
-
-    }
-
-
-    if ($("discountType")) {
-
-        $("discountType").value =
-            "percent";
-
-    }
-
-
-    if ($("tax")) {
-
-        $("tax").value =
-            0;
-
-    }
 
 
     if ($("currency")) {
@@ -1462,22 +1795,64 @@ function clearInvoice() {
     }
 
 
-    /*
-       Clear deliverables
-    */
+    if ($("hasDiscount")) {
+
+        $("hasDiscount").checked =
+            false;
+
+    }
+
+
+    if ($("discount")) {
+
+        $("discount").value =
+            "0";
+
+    }
+
+
+    if ($("discountType")) {
+
+        $("discountType").value =
+            "percent";
+
+    }
+
+
+    if ($("tax")) {
+
+        $("tax").value =
+            "0";
+
+    }
+
+
+    if ($("brandLogo")) {
+
+        $("brandLogo").value =
+            "";
+
+    }
+
 
     deliverables = [];
+
+    brandLogoData = "";
 
 
     renderDeliverableEditors();
 
+    updateDiscountUI();
+
     updateInvoice();
+
+    updateQR();
 
 }
 
 
 /* =========================================================
-   PRINT / PDF
+   32. PRINT / PDF
 ========================================================= */
 
 function printInvoice() {
@@ -1488,153 +1863,206 @@ function printInvoice() {
 
 
 /* =========================================================
-   EVENT LISTENERS
+   33. EVENT LISTENERS
+========================================================= */
+
+function setupEventListeners() {
+
+    const liveFields = [
+
+        "currency",
+        "invoiceNo",
+        "invoiceDate",
+        "dueDate",
+        "client",
+        "address",
+        "project",
+        "paymentStatus",
+        "tax",
+        "terms",
+        "footerLeft",
+        "brandName",
+        "brandTagline"
+
+    ];
+
+
+    liveFields.forEach(
+        function (id) {
+
+            const field =
+                $(id);
+
+
+            if (!field) {
+                return;
+            }
+
+
+            field.addEventListener(
+                "input",
+                updateInvoice
+            );
+
+
+            field.addEventListener(
+                "change",
+                updateInvoice
+            );
+
+        }
+    );
+
+
+    /* QR */
+
+    if ($("invoiceNo")) {
+
+        $("invoiceNo").addEventListener(
+            "input",
+            updateQR
+        );
+
+    }
+
+
+    /* DISCOUNT */
+
+    if ($("hasDiscount")) {
+
+        $("hasDiscount").addEventListener(
+            "change",
+            updateDiscountAndInvoice
+        );
+
+    }
+
+
+    if ($("discountType")) {
+
+        $("discountType").addEventListener(
+            "change",
+            updateDiscountAndInvoice
+        );
+
+    }
+
+
+    if ($("discount")) {
+
+        $("discount").addEventListener(
+            "input",
+            updateDiscountAndInvoice
+        );
+
+    }
+
+
+    /* ADD DELIVERABLE */
+
+    if ($("addDeliverable")) {
+
+        $("addDeliverable").addEventListener(
+            "click",
+            addDeliverable
+        );
+
+    }
+
+
+    /* BRAND LOGO */
+
+    if ($("brandLogo")) {
+
+        $("brandLogo").addEventListener(
+            "change",
+            handleBrandLogo
+        );
+
+    }
+
+
+    /* CLEAR */
+
+    if ($("clearBtn")) {
+
+        $("clearBtn").addEventListener(
+            "click",
+            resetInvoice
+        );
+
+    }
+
+
+    /* SAVE */
+
+    if ($("saveBtn")) {
+
+        $("saveBtn").addEventListener(
+            "click",
+            saveInvoice
+        );
+
+    }
+
+
+    /* PRINT */
+
+    if ($("printBtn")) {
+
+        $("printBtn").addEventListener(
+            "click",
+            printInvoice
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   34. GLOBAL FUNCTIONS
+========================================================= */
+
+window.addDeliverable =
+    addDeliverable;
+
+window.removeDeliverable =
+    removeDeliverable;
+
+window.updateDeliverable =
+    updateDeliverable;
+
+window.saveInvoice =
+    saveInvoice;
+
+
+/* =========================================================
+   35. INITIALIZE
 ========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
-    function() {
+    async function () {
 
+        await setupAuth();
 
-        /*
-           Find all editable fields
-        */
-
-        const fields =
-            document.querySelectorAll(
-                "input, select"
-            );
-
-
-        fields.forEach(
-            function(field) {
-
-
-                field.addEventListener(
-                    "input",
-                    updateInvoice
-                );
-
-
-                field.addEventListener(
-                    "change",
-                    updateInvoice
-                );
-
-            }
-        );
-
-
-        /*
-           Add deliverable
-        */
-
-        const addButton =
-            $("addDeliverable");
-
-
-        if (addButton) {
-
-            addButton.addEventListener(
-                "click",
-                addDeliverable
-            );
-
-        }
-
-
-        /*
-           Clear
-        */
-
-        const clearButton =
-            $("clearBtn");
-
-
-        if (clearButton) {
-
-            clearButton.addEventListener(
-                "click",
-                clearInvoice
-            );
-
-        }
-
-
-        /*
-           Print
-        */
-
-        const printButton =
-            $("printBtn");
-
-
-        if (printButton) {
-
-            printButton.addEventListener(
-                "click",
-                printInvoice
-            );
-
-        }
-
-
-        const logoInput =
-            $("brandLogo");
-
-
-        if (logoInput) {
-
-            logoInput.addEventListener(
-                "change",
-                function(event) {
-
-                    const file =
-                        event.target.files?.[0];
-
-
-                    if (!file) {
-
-                        brandLogoData =
-                            "";
-
-                        updateBranding();
-
-                        return;
-
-                    }
-
-
-                    const reader =
-                        new FileReader();
-
-
-                    reader.onload =
-                        function(loadEvent) {
-
-                            brandLogoData =
-                                loadEvent.target.result;
-
-                            updateBranding();
-
-                        };
-
-
-                    reader.readAsDataURL(file);
-
-                }
-            );
-
-        }
-
-
-        /*
-           Initial rendering
-        */
+        setupEventListeners();
 
         renderDeliverableEditors();
 
+        updateDiscountUI();
+
         updateInvoice();
+
+        updateRoleAccess();
+
+        generateQR();
+
+        console.log(
+            "Invoice Builder initialized successfully."
+        );
 
     }
 );
+;
