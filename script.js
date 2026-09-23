@@ -1,11 +1,6 @@
 /* =========================================================
    INVOICE BUILDER
-   Live Editing + Calculations + QR + Supabase
-========================================================= */
-
-
-/* =========================================================
-   1. SUPABASE
+   Live Editing + Calculations + QR + Supabase Auth
 ========================================================= */
 
 const SUPABASE_URL = "https://jilmmclikggptpnsibvy.supabase.co";
@@ -14,118 +9,67 @@ const SUPABASE_KEY = "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE";
 let supabaseClient = null;
 
 try {
-
     if (window.supabase?.createClient) {
         supabaseClient = window.supabase.createClient(
             SUPABASE_URL,
-            SUPABASE_KEY
+            SUPABASE_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            }
         );
+        window.__invoiceAuthClient = supabaseClient;
     }
-
 } catch (error) {
-
     console.error("Supabase initialization failed:", error);
-
 }
 
-
-/* =========================================================
-   2. SETTINGS
-========================================================= */
-
 const DEFAULT_INVOICE = "INV-TL-2026-001";
-
-/*
-   QR CODE DESTINATION
-*/
-const THINKLIMITLESS_URL =
-    "https://www.thinklimitless.co/";
-
-
-/* =========================================================
-   3. VARIABLES
-========================================================= */
+const THINKLIMITLESS_URL = "https://www.thinklimitless.co/";
 
 let deliverables = [];
-
 let brandLogoData = "";
 
 const AUTH_ROLE_KEY = "invoice_dashboard_role";
 
-const AUTH_PASSWORDS = {
-    admin: "limitless.admin",
-    employee: "limitless.employee"
-};
-
-let currentRole =
-    localStorage.getItem(AUTH_ROLE_KEY) || null;
-
-
-/* =========================================================
-   4. DOM HELPER
-========================================================= */
+let currentRole = localStorage.getItem(AUTH_ROLE_KEY) || null;
 
 function $(id) {
     return document.getElementById(id);
 }
-
 
 function showLoginScreen() {
     const authScreen = $("authScreen");
     const landingScreen = $("landingScreen");
     const app = $("app");
 
-    if (authScreen) {
-        authScreen.classList.remove("hidden");
-    }
-
-    if (landingScreen) {
-        landingScreen.classList.add("hidden");
-    }
-
-    if (app) {
-        app.classList.add("hidden");
-    }
+    if (authScreen) authScreen.classList.remove("hidden");
+    if (landingScreen) landingScreen.classList.add("hidden");
+    if (app) app.classList.add("hidden");
 }
-
 
 function showLandingScreen() {
     const authScreen = $("authScreen");
     const landingScreen = $("landingScreen");
     const app = $("app");
 
-    if (authScreen) {
-        authScreen.classList.add("hidden");
-    }
-
-    if (landingScreen) {
-        landingScreen.classList.remove("hidden");
-    }
-
-    if (app) {
-        app.classList.add("hidden");
-    }
+    if (authScreen) authScreen.classList.add("hidden");
+    if (landingScreen) landingScreen.classList.remove("hidden");
+    if (app) app.classList.add("hidden");
 }
-
 
 function showDashboard() {
     const authScreen = $("authScreen");
     const landingScreen = $("landingScreen");
     const app = $("app");
 
-    if (authScreen) {
-        authScreen.classList.add("hidden");
-    }
-
-    if (landingScreen) {
-        landingScreen.classList.add("hidden");
-    }
-
-    if (app) {
-        app.classList.remove("hidden");
-    }
+    if (authScreen) authScreen.classList.add("hidden");
+    if (landingScreen) landingScreen.classList.add("hidden");
+    if (app) app.classList.remove("hidden");
 }
-
 
 function updateRoleAccess() {
     const role = localStorage.getItem(AUTH_ROLE_KEY);
@@ -145,33 +89,13 @@ function updateRoleAccess() {
     const fee = $("fee");
     const addDeliverable = $("addDeliverable");
 
-    if (paymentStatus) {
-        paymentStatus.disabled = !isAdmin;
-    }
-
-    if (hasDiscount) {
-        hasDiscount.disabled = !isAdmin;
-    }
-
-    if (discount) {
-        discount.disabled = !isAdmin;
-    }
-
-    if (discountType) {
-        discountType.disabled = !isAdmin;
-    }
-
-    if (tax) {
-        tax.disabled = !isAdmin;
-    }
-
-    if (fee) {
-        fee.readOnly = !isAdmin;
-    }
-
-    if (addDeliverable) {
-        addDeliverable.disabled = false;
-    }
+    if (paymentStatus) paymentStatus.disabled = !isAdmin;
+    if (hasDiscount) hasDiscount.disabled = !isAdmin;
+    if (discount) discount.disabled = !isAdmin;
+    if (discountType) discountType.disabled = !isAdmin;
+    if (tax) tax.disabled = !isAdmin;
+    if (fee) fee.readOnly = !isAdmin;
+    if (addDeliverable) addDeliverable.disabled = false;
 
     document.querySelectorAll(".deliverable-editor input[type='number']").forEach(function (input) {
         const parent = input.closest(".two-columns");
@@ -196,143 +120,21 @@ function updateRoleAccess() {
     });
 }
 
-
-function loginWithRole(role) {
-    const password = $("loginPassword")?.value || "";
-    const expectedPassword = AUTH_PASSWORDS[role];
-    const loginError = $("loginError");
-
-    if (!expectedPassword) {
-        return;
-    }
-
-    if (password !== expectedPassword) {
-        if (loginError) {
-            loginError.textContent = "Incorrect password.";
-        }
-        return;
-    }
-
-    currentRole = role;
-    localStorage.setItem(AUTH_ROLE_KEY, role);
-
-    if (loginError) {
-        loginError.textContent = "";
-    }
-
-    showLandingScreen();
-    updateRoleAccess();
-}
-
-
 function setupAuth() {
-    const authButtons = document.querySelectorAll(".auth-role");
-
-    authButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-            const role = button.dataset.role;
-
-            authButtons.forEach(function (item) {
-                item.classList.toggle("active", item === button);
-            });
-
-            if (role) {
-                $("loginPassword")?.focus();
-            }
-        });
-    });
-
-    $("loginBtn")?.addEventListener("click", function () {
-        const selectedRole = document.querySelector(".auth-role.active")?.dataset.role || "admin";
-        loginWithRole(selectedRole);
-    });
-
-    $("logoutBtn")?.addEventListener("click", function () {
-        localStorage.removeItem(AUTH_ROLE_KEY);
-        currentRole = null;
-        if ($("loginPassword")) {
-            $("loginPassword").value = "";
-        }
-        showLoginScreen();
-    });
-
-    $("landingLogoutBtn")?.addEventListener("click", function () {
-        localStorage.removeItem(AUTH_ROLE_KEY);
-        currentRole = null;
-        if ($("loginPassword")) {
-            $("loginPassword").value = "";
-        }
-        showLoginScreen();
-    });
-
-    $("newInvoiceBtn")?.addEventListener("click", function () {
-        showDashboard();
+    const storedRole = localStorage.getItem(AUTH_ROLE_KEY);
+    if (storedRole) {
+        currentRole = storedRole;
+        showLandingScreen();
         updateRoleAccess();
-        if ($("invoiceNo")) {
-            $("invoiceNo").value = "";
-        }
-    });
-
-    $("openInvoiceBtn")?.addEventListener("click", async function () {
-        const invoiceNumber = ($("openInvoiceNumber")?.value || "").trim();
-        const errorBox = $("landingError");
-
-        if (!invoiceNumber) {
-            if (errorBox) {
-                errorBox.textContent = "Please enter an invoice number.";
-            }
-            return;
-        }
-
-        if (!supabaseClient) {
-            if (errorBox) {
-                errorBox.textContent = "Database connection is not configured.";
-            }
-            return;
-        }
-
-        try {
-            const { data, error } = await supabaseClient
-                .from("invoices")
-                .select("*")
-                .eq("invoice_number", invoiceNumber)
-                .maybeSingle();
-
-            if (error) {
-                throw error;
-            }
-
-            if (!data) {
-                if (errorBox) {
-                    errorBox.textContent = "No invoice found with that number.";
-                }
-                return;
-            }
-
-            applySavedInvoice(data);
-            showDashboard();
-            updateRoleAccess();
-            if (errorBox) {
-                errorBox.textContent = "";
-            }
-        } catch (error) {
-            console.error("OPEN INVOICE ERROR:", error);
-            if (errorBox) {
-                errorBox.textContent = "Unable to load this invoice.";
-            }
-        }
-    });
+        return;
+    }
 
     currentRole = null;
-    localStorage.removeItem(AUTH_ROLE_KEY);
     showLoginScreen();
 }
 
-
 function applySavedInvoice(invoice) {
-    if (!invoice) {
-        return;
-    }
+    if (!invoice) return;
 
     const assign = function (id, value) {
         const field = $(id);
@@ -375,1078 +177,315 @@ function applySavedInvoice(invoice) {
     updateInvoice();
 }
 
-
-/* =========================================================
-   5. MONEY FORMAT
-========================================================= */
-
 function formatMoney(value) {
-
     return new Intl.NumberFormat("en-US", {
         maximumFractionDigits: 0
-    }).format(
-        Math.round(Number(value) || 0)
-    );
-
+    }).format(Math.round(Number(value) || 0));
 }
-
-
-/* =========================================================
-   6. DATE FORMAT
-========================================================= */
 
 function formatDate(value) {
+    if (!value) return "";
 
-    if (!value) {
-        return "";
-    }
-
-    const date =
-        new Date(value + "T00:00:00");
-
-    return date.toLocaleDateString(
-        "en-GB",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    ).toUpperCase();
-
+    const date = new Date(value + "T00:00:00");
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    }).toUpperCase();
 }
-
-
-/* =========================================================
-   7. HTML ESCAPE
-========================================================= */
 
 function escapeHTML(value) {
-
-    return String(value ?? "")
-        .replace(
-            /[&<>"']/g,
-            function (character) {
-
-                return {
-                    "&": "&amp;",
-                    "<": "&lt;",
-                    ">": "&gt;",
-                    '"': "&quot;",
-                    "'": "&#039;"
-                }[character];
-
-            }
-        );
-
+    return String(value ?? "").replace(/[&<>"']/g, function (character) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        }[character];
+    });
 }
-
-
-/* =========================================================
-   8. GET CURRENCY
-========================================================= */
 
 function getCurrency() {
-
     return $("currency")?.value || "PKR";
-
 }
-
-
-/* =========================================================
-   9. DELIVERABLE EDITORS
-========================================================= */
 
 function renderDeliverableEditors() {
+    const container = $("deliverableEditors");
+    if (!container) return;
 
-    const container =
-        $("deliverableEditors");
+    container.innerHTML = deliverables.map(function (item, index) {
+        return `
+            <div class="deliverable-editor">
+                <div class="deliverable-head">
+                    <span class="deliverable-number">DELIVERABLE ${String(index + 1).padStart(2, "0")}</span>
+                    <button type="button" class="remove-deliverable" onclick="removeDeliverable(${index})">×</button>
+                </div>
 
-    if (!container) {
-        return;
-    }
+                <div class="form-field">
+                    <label>Name</label>
+                    <input type="text" value="${escapeHTML(item.name)}" oninput="updateDeliverable(${index}, 'name', this.value)">
+                </div>
 
-    container.innerHTML =
-        deliverables.map(
-            function (item, index) {
+                <div class="form-field">
+                    <label>Description</label>
+                    <input type="text" value="${escapeHTML(item.description)}" oninput="updateDeliverable(${index}, 'description', this.value)">
+                </div>
 
-                return `
-
-                    <div class="deliverable-editor">
-
-                        <div class="deliverable-head">
-
-                            <span class="deliverable-number">
-
-                                DELIVERABLE
-                                ${String(index + 1).padStart(2, "0")}
-
-                            </span>
-
-                            <button
-                                type="button"
-                                class="remove-deliverable"
-                                onclick="removeDeliverable(${index})"
-                            >
-                                ×
-                            </button>
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label>Name</label>
-
-                            <input
-                                type="text"
-                                value="${escapeHTML(item.name)}"
-                                oninput="
-                                    updateDeliverable(
-                                        ${index},
-                                        'name',
-                                        this.value
-                                    )
-                                "
-                            >
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label>Description</label>
-
-                            <input
-                                type="text"
-                                value="${escapeHTML(item.description)}"
-                                oninput="
-                                    updateDeliverable(
-                                        ${index},
-                                        'description',
-                                        this.value
-                                    )
-                                "
-                            >
-
-                        </div>
-
-
-                        <div class="two-columns">
-
-                            <div class="form-field">
-
-                                <label>Qty</label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value="${item.qty}"
-                                    oninput="
-                                        updateDeliverable(
-                                            ${index},
-                                            'qty',
-                                            this.value
-                                        )
-                                    "
-                                >
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label>Amount</label>
-
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value="${item.amount}"
-                                    oninput="
-                                        updateDeliverable(
-                                            ${index},
-                                            'amount',
-                                            this.value
-                                        )
-                                    "
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label>Payment Status</label>
-
-                            <select
-                                onchange="
-                                    updateDeliverable(
-                                        ${index},
-                                        'status',
-                                        this.value
-                                    )
-                                "
-                            >
-
-                                <option
-                                    value="PENDING"
-                                    ${item.status === "PENDING"
-                                        ? "selected"
-                                        : ""}
-                                >
-                                    Pending
-                                </option>
-
-                                <option
-                                    value="PAID"
-                                    ${item.status === "PAID"
-                                        ? "selected"
-                                        : ""}
-                                >
-                                    Paid
-                                </option>
-
-                                <option
-                                    value="PARTIAL"
-                                    ${item.status === "PARTIAL"
-                                        ? "selected"
-                                        : ""}
-                                >
-                                    Partial
-                                </option>
-
-                                <option
-                                    value="OVERDUE"
-                                    ${item.status === "OVERDUE"
-                                        ? "selected"
-                                        : ""}
-                                >
-                                    Overdue
-                                </option>
-
-                            </select>
-
-                        </div>
-
+                <div class="two-columns">
+                    <div class="form-field">
+                        <label>Qty</label>
+                        <input type="number" min="0" value="${item.qty}" oninput="updateDeliverable(${index}, 'qty', this.value)">
                     </div>
 
-                `;
+                    <div class="form-field">
+                        <label>Amount</label>
+                        <input type="number" min="0" value="${item.amount}" oninput="updateDeliverable(${index}, 'amount', this.value)">
+                    </div>
+                </div>
 
-            }
-        ).join("");
+                <div class="form-field">
+                    <label>Payment Status</label>
+                    <select onchange="updateDeliverable(${index}, 'status', this.value)">
+                        <option value="PENDING" ${item.status === "PENDING" ? "selected" : ""}>Pending</option>
+                        <option value="PAID" ${item.status === "PAID" ? "selected" : ""}>Paid</option>
+                        <option value="PARTIAL" ${item.status === "PARTIAL" ? "selected" : ""}>Partial</option>
+                        <option value="OVERDUE" ${item.status === "OVERDUE" ? "selected" : ""}>Overdue</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    }).join("");
 
     renderDeliverableTable();
-
 }
 
+function updateDeliverable(index, property, value) {
+    if (!deliverables[index]) return;
 
-/* =========================================================
-   10. UPDATE DELIVERABLE
-========================================================= */
-
-function updateDeliverable(
-    index,
-    property,
-    value
-) {
-
-    if (!deliverables[index]) {
-        return;
-    }
-
-
-    if (
-        property === "qty" ||
-        property === "amount"
-    ) {
-
-        deliverables[index][property] =
-            Number(value) || 0;
-
+    if (property === "qty" || property === "amount") {
+        deliverables[index][property] = Number(value) || 0;
     } else {
-
-        deliverables[index][property] =
-            value;
-
+        deliverables[index][property] = value;
     }
 
-
     renderDeliverableTable();
-
     updateInvoice();
-
 }
-
-
-/* =========================================================
-   11. ADD DELIVERABLE
-========================================================= */
 
 function addDeliverable() {
-
     deliverables.push({
-
         name: "",
         description: "",
         qty: 1,
         amount: 0,
         status: "PENDING"
-
     });
 
-
     renderDeliverableEditors();
-
     updateInvoice();
-
 }
-
-
-/* =========================================================
-   12. REMOVE DELIVERABLE
-========================================================= */
 
 function removeDeliverable(index) {
+    if (!deliverables[index]) return;
 
-    if (!deliverables[index]) {
-        return;
-    }
-
-
-    deliverables.splice(
-        index,
-        1
-    );
-
-
+    deliverables.splice(index, 1);
     renderDeliverableEditors();
-
     updateInvoice();
-
 }
-
-
-/* =========================================================
-   13. RENDER DELIVERABLE TABLE
-========================================================= */
 
 function renderDeliverableTable() {
+    const table = $("deliverableRows");
+    if (!table) return;
 
-    const table =
-        $("deliverableRows");
+    const currency = getCurrency();
 
-    if (!table) {
-        return;
-    }
-
-
-    const currency =
-        getCurrency();
-
-
-    table.innerHTML =
-        deliverables.map(
-            function (item, index) {
-
-                return `
-
-                    <tr>
-
-                        <td>
-
-                            <span class="deliverable-name">
-
-                                ${String(index + 1)
-                                    .padStart(2, "0")}
-
-                                &nbsp;
-
-                                ${escapeHTML(
-                                    item.name ||
-                                    "DELIVERABLE"
-                                )}
-
-                            </span>
-
-                        </td>
-
-
-                        <td>
-
-                            ${escapeHTML(
-                                item.description || ""
-                            )}
-
-                        </td>
-
-
-                        <td>
-
-                            ${item.qty || 0}
-
-                        </td>
-
-
-                        <td>
-
-                            ${currency}
-                            ${formatMoney(item.amount)}
-
-                        </td>
-
-
-                        <td>
-
-                            <span
-                                class="
-                                    deliverable-status
-                                    ${(item.status ||
-                                        "PENDING")
-                                        .toLowerCase()}
-                                "
-                            >
-
-                                ${(item.status ||
-                                    "PENDING")
-                                    .toUpperCase()}
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-        ).join("");
-
+    table.innerHTML = deliverables.map(function (item, index) {
+        return `
+            <tr>
+                <td>
+                    <span class="deliverable-name">${String(index + 1).padStart(2, "0")} &nbsp; ${escapeHTML(item.name || "DELIVERABLE")}</span>
+                </td>
+                <td>${escapeHTML(item.description || "")}</td>
+                <td>${item.qty || 0}</td>
+                <td>${currency} ${formatMoney(item.amount)}</td>
+                <td><span class="deliverable-status ${(item.status || "PENDING").toLowerCase()}">${(item.status || "PENDING").toUpperCase()}</span></td>
+            </tr>
+        `;
+    }).join("");
 }
 
-
-/* =========================================================
-   14. CALCULATE TOTALS
-========================================================= */
-
 function calculateTotals() {
-
-    const subtotal =
-        deliverables.reduce(
-            function (total, item) {
-
-                return total +
-
-                    (
-                        Number(item.qty) || 0
-                    )
-
-                    *
-
-                    (
-                        Number(item.amount) || 0
-                    );
-
-            },
-            0
-        );
-
+    const subtotal = deliverables.reduce(function (total, item) {
+        return total + ((Number(item.qty) || 0) * (Number(item.amount) || 0));
+    }, 0);
 
     let discount = 0;
 
-
-    const hasDiscount =
-        $("hasDiscount")?.checked ||
-        false;
-
+    const hasDiscount = $("hasDiscount")?.checked || false;
 
     if (hasDiscount) {
+        const discountValue = Number($("discount")?.value) || 0;
+        const discountType = $("discountType")?.value || "percent";
 
-        const discountValue =
-            Number(
-                $("discount")?.value
-            ) || 0;
-
-
-        const discountType =
-            $("discountType")?.value ||
-            "percent";
-
-
-        if (
-            discountType === "percent"
-        ) {
-
-            discount =
-                subtotal *
-                (
-                    discountValue / 100
-                );
-
+        if (discountType === "percent") {
+            discount = subtotal * (discountValue / 100);
         } else {
-
-            discount =
-                discountValue;
-
+            discount = discountValue;
         }
 
-
-        discount =
-            Math.min(
-                discount,
-                subtotal
-            );
-
+        discount = Math.min(discount, subtotal);
     }
 
+    const tax = Number($("tax")?.value) || 0;
+    const afterDiscount = Math.max(subtotal - discount, 0);
+    const taxAmount = afterDiscount * (tax / 100);
+    const total = afterDiscount + taxAmount;
 
-    const tax =
-        Number(
-            $("tax")?.value
-        ) || 0;
-
-
-    const afterDiscount =
-        Math.max(
-            subtotal - discount,
-            0
-        );
-
-
-    const taxAmount =
-        afterDiscount *
-        (
-            tax / 100
-        );
-
-
-    const total =
-        afterDiscount +
-        taxAmount;
-
-
-    return {
-
-        subtotal,
-        discount,
-        tax,
-        taxAmount,
-        total
-
-    };
-
+    return { subtotal, discount, tax, taxAmount, total };
 }
-
-
-/* =========================================================
-   15. UPDATE COMMERCIAL
-========================================================= */
 
 function updateCommercial() {
+    const totals = calculateTotals();
+    const currency = getCurrency();
 
-    const totals =
-        calculateTotals();
+    if ($("fee")) $("fee").value = Math.round(totals.subtotal);
+    if ($("outFee")) $("outFee").textContent = currency + " " + formatMoney(totals.subtotal);
 
-
-    const currency =
-        getCurrency();
-
-
-    /* Original fee */
-
-    if ($("fee")) {
-
-        $("fee").value =
-            Math.round(
-                totals.subtotal
-            );
-
-    }
-
-
-    if ($("outFee")) {
-
-        $("outFee").textContent =
-            currency +
-            " " +
-            formatMoney(
-                totals.subtotal
-            );
-
-    }
-
-
-    /* Discount row */
-
-    if ($("discountRow")) {
-
-        $("discountRow").hidden =
-            !$("hasDiscount")?.checked;
-
-    }
-
+    if ($("discountRow")) $("discountRow").hidden = !($("hasDiscount")?.checked);
 
     if ($("discountLabel")) {
-
-        const type =
-            $("discountType")?.value ||
-            "percent";
-
-
-        const value =
-            Number(
-                $("discount")?.value
-            ) || 0;
-
-
-        $("discountLabel").textContent =
-            type === "percent"
-
-                ? value + "% discount"
-
-                : "Discount";
-
+        const type = $("discountType")?.value || "percent";
+        const value = Number($("discount")?.value) || 0;
+        $("discountLabel").textContent = type === "percent" ? value + "% discount" : "Discount";
     }
 
+    if ($("outDiscount")) $("outDiscount").textContent = "− " + currency + " " + formatMoney(totals.discount);
 
-    if ($("outDiscount")) {
+    if ($("taxLabel")) $("taxLabel").textContent = (totals.tax || 0) + "% tax";
+    if ($("outTax")) $("outTax").textContent = "+ " + currency + " " + formatMoney(totals.taxAmount);
 
-        $("outDiscount").textContent =
-            "− " +
-            currency +
-            " " +
-            formatMoney(
-                totals.discount
-            );
-
-    }
-
-
-    /* Tax */
-
-    if ($("taxLabel")) {
-
-        $("taxLabel").textContent =
-            (
-                totals.tax || 0
-            ) +
-            "% tax";
-
-    }
-
-
-    if ($("outTax")) {
-
-        $("outTax").textContent =
-            "+ " +
-            currency +
-            " " +
-            formatMoney(
-                totals.taxAmount
-            );
-
-    }
-
-
-    /* Total */
-
-    if ($("outTotal")) {
-
-        $("outTotal").textContent =
-            currency +
-            " " +
-            formatMoney(
-                totals.total
-            );
-
-    }
-
+    if ($("outTotal")) $("outTotal").textContent = currency + " " + formatMoney(totals.total);
 }
-
-
-/* =========================================================
-   16. DISCOUNT UI
-========================================================= */
 
 function updateDiscountUI() {
+    const enabled = $("hasDiscount")?.checked || false;
 
-    const enabled =
-        $("hasDiscount")?.checked ||
-        false;
+    if ($("discountBlock")) $("discountBlock").hidden = !enabled;
 
-
-    if ($("discountBlock")) {
-
-        $("discountBlock").hidden =
-            !enabled;
-
-    }
-
-
-    const type =
-        $("discountType")?.value ||
-        "percent";
-
+    const type = $("discountType")?.value || "percent";
 
     if ($("discountInputLabel")) {
-
-        $("discountInputLabel").textContent =
-            type === "percent"
-
-                ? "Discount %"
-
-                : "Discount Amount";
-
+        $("discountInputLabel").textContent = type === "percent" ? "Discount %" : "Discount Amount";
     }
-
 
     if ($("discount")) {
-
         if (type === "percent") {
-
-            $("discount").max =
-                "100";
-
+            $("discount").max = "100";
         } else {
-
-            $("discount")
-                .removeAttribute("max");
-
+            $("discount").removeAttribute("max");
         }
-
     }
-
 
     updateCommercial();
-
 }
-
 
 function updateDiscountAndInvoice() {
-
     updateDiscountUI();
     updateInvoice();
-
 }
-
-
-/* =========================================================
-   17. CLIENT
-========================================================= */
 
 function updateClient() {
+    const client = $("client")?.value.trim();
+    const address = $("address")?.value.trim();
 
-    const client =
-        $("client")?.value.trim();
-
-
-    const address =
-        $("address")?.value.trim();
-
-
-    if ($("outClient")) {
-
-        $("outClient").textContent =
-            client ||
-            "Client Name";
-
-    }
-
-
-    if ($("outAddress")) {
-
-        $("outAddress").textContent =
-            address ||
-            "Client address";
-
-    }
-
+    if ($("outClient")) $("outClient").textContent = client || "Client Name";
+    if ($("outAddress")) $("outAddress").textContent = address || "Client address";
 
     updateProject();
-
 }
-
-
-/* =========================================================
-   18. PROJECT
-========================================================= */
 
 function updateProject() {
+    const project = $("project")?.value.trim() || "Project Name";
+    const client = $("client")?.value.trim() || "CLIENT";
 
-    const project =
-        $("project")?.value.trim() ||
-        "Project Name";
-
-
-    const client =
-        $("client")?.value.trim() ||
-        "CLIENT";
-
-
-    if ($("outProject")) {
-
-        $("outProject").textContent =
-            project;
-
-    }
-
-
-    if ($("footerRight")) {
-
-        $("footerRight").textContent =
-            (
-                client +
-                " · " +
-                project
-            ).toUpperCase();
-
-    }
-
+    if ($("outProject")) $("outProject").textContent = project;
+    if ($("footerRight")) $("footerRight").textContent = (client + " · " + project).toUpperCase();
 }
-
-
-/* =========================================================
-   19. PAYMENT STATUS
-========================================================= */
 
 function updatePaymentStatus() {
+    const status = $("paymentStatus")?.value || "DUE";
+    const output = $("outStatus");
+    if (!output) return;
 
-    const status =
-        $("paymentStatus")?.value ||
-        "DUE";
-
-
-    const output =
-        $("outStatus");
-
-
-    if (!output) {
-        return;
-    }
-
-
-    output.textContent =
-        status;
-
-
-    output.classList.remove(
-        "paid",
-        "pending",
-        "due"
-    );
-
-
-    output.classList.add(
-        status.toLowerCase()
-    );
-
+    output.textContent = status;
+    output.classList.remove("paid", "pending", "due");
+    output.classList.add(status.toLowerCase());
 }
-
-
-/* =========================================================
-   20. INVOICE DATE
-========================================================= */
 
 function updateInvoiceDate() {
-
-    if (!$("outDate")) {
-        return;
-    }
-
-
-    $("outDate").textContent =
-        formatDate(
-            $("invoiceDate")?.value
-        );
-
+    if (!$("outDate")) return;
+    $("outDate").textContent = formatDate($("invoiceDate")?.value);
 }
-
-
-/* =========================================================
-   21. INVOICE NUMBER
-========================================================= */
 
 function updateInvoiceNumber() {
-
-    const invoiceNumber =
-        $("invoiceNo")?.value.trim() ||
-        DEFAULT_INVOICE;
-
-
-    if ($("qrNumber")) {
-
-        $("qrNumber").textContent =
-            invoiceNumber;
-
-    }
-
+    const invoiceNumber = $("invoiceNo")?.value.trim() || DEFAULT_INVOICE;
+    if ($("qrNumber")) $("qrNumber").textContent = invoiceNumber;
 }
 
-
-/* =========================================================
-    26. UPDATE QR LABEL
-========================================================= */
 function updateQR() {
-
-    // QR destination remains static; only the invoice number label updates here.
     updateInvoiceNumber();
-
 }
-
-
-/* =========================================================
-   22. PAYMENT TERMS
-========================================================= */
 
 function updatePaymentTerms() {
-
-    if (!$("outTerms")) {
-        return;
-    }
-
-
-    $("outTerms").textContent =
-        $("terms")?.value ||
-        "100% due on invoice";
-
+    if (!$("outTerms")) return;
+    $("outTerms").textContent = $("terms")?.value || "100% due on invoice";
 }
-
-
-/* =========================================================
-   23. BRANDING
-========================================================= */
 
 function updateBranding() {
+    const brandName = $("brandName")?.value.trim() || "THINKLIMITLESS";
+    const brandTagline = $("brandTagline")?.value.trim() || "AI · MEDIA · CREATIVITY";
 
-    const brandName =
-        $("brandName")?.value.trim() ||
-        "THINKLIMITLESS";
+    if ($("outBrandName")) $("outBrandName").textContent = brandName;
+    if ($("outBrandTagline")) $("outBrandTagline").textContent = brandTagline;
 
-
-    const brandTagline =
-        $("brandTagline")?.value.trim() ||
-        "AI · MEDIA · CREATIVITY";
-
-
-    if ($("outBrandName")) {
-
-        $("outBrandName").textContent =
-            brandName;
-
-    }
-
-
-    if ($("outBrandTagline")) {
-
-        $("outBrandTagline").textContent =
-            brandTagline;
-
-    }
-
-
-    const logo =
-        $("outBrandLogo");
-
-
-    if (!logo) {
-        return;
-    }
-
+    const logo = $("outBrandLogo");
+    if (!logo) return;
 
     if (brandLogoData) {
-
-        logo.src =
-            brandLogoData;
-
-        logo.classList.add(
-            "has-image"
-        );
-
+        logo.src = brandLogoData;
+        logo.classList.add("has-image");
     } else {
-
-        logo.removeAttribute(
-            "src"
-        );
-
-        logo.classList.remove(
-            "has-image"
-        );
-
+        logo.removeAttribute("src");
+        logo.classList.remove("has-image");
     }
-
 }
-
-
-/* =========================================================
-   24. BRAND LOGO
-========================================================= */
 
 function handleBrandLogo(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const file =
-        event.target.files?.[0];
-
-
-    if (!file) {
-        return;
-    }
-
-
-    const reader =
-        new FileReader();
-
-
-    reader.onload =
-        function () {
-
-            brandLogoData =
-                reader.result;
-
-            updateBranding();
-
-        };
-
-
+    const reader = new FileReader();
+    reader.onload = function () {
+        brandLogoData = reader.result;
+        updateBranding();
+    };
     reader.readAsDataURL(file);
-
 }
-
-
-/* =========================================================
-   25. FOOTER
-========================================================= */
 
 function updateFooter() {
-
-    const footerText =
-        $("footerLeft")?.value.trim();
-
-
-    if ($("outFooterLeft")) {
-
-        $("outFooterLeft").textContent =
-            footerText ||
-            "THINKLIMITLESS © 2026";
-
-    }
-
+    const footerText = $("footerLeft")?.value.trim();
+    if ($("outFooterLeft")) $("outFooterLeft").textContent = footerText || "THINKLIMITLESS © 2026";
 }
 
-
-/* =========================================================
-    27. GENERATE QR
-========================================================= */
 function generateQR() {
-
     const qrContainer = $("qr");
-
     if (!qrContainer) {
         console.error("QR container not found.");
         return;
     }
 
     qrContainer.innerHTML = "";
-
     if (typeof QRCode === "undefined") {
         console.error("QRCode library not loaded.");
         return;
@@ -1458,293 +497,92 @@ function generateQR() {
         height: 96,
         correctLevel: QRCode.CorrectLevel.H
     });
-
 }
-
-
-
-/* =========================================================
-   28. UPDATE EVERYTHING
-========================================================= */
 
 function updateInvoice() {
-
     updateDiscountUI();
-
     updateClient();
-
     updateProject();
-
     updatePaymentStatus();
-
     updateInvoiceDate();
-
     updateInvoiceNumber();
-
     updatePaymentTerms();
-
     updateBranding();
-
     updateFooter();
-
     updateCommercial();
-
     renderDeliverableTable();
-
 }
-
-
-/* =========================================================
-   29. COLLECT INVOICE DATA
-========================================================= */
 
 function collectInvoiceData() {
-
-    const totals =
-        calculateTotals();
-
+    const totals = calculateTotals();
 
     return {
-
-        invoice_number:
-            $("invoiceNo")?.value.trim() ||
-            DEFAULT_INVOICE,
-
-        invoice_date:
-            $("invoiceDate")?.value ||
-            null,
-
-        due_date:
-            $("dueDate")?.value ||
-            null,
-
-        company_name:
-            $("brandName")?.value.trim() ||
-            "",
-
-        client_name:
-            $("client")?.value.trim() ||
-            "",
-
-        client_address:
-            $("address")?.value.trim() ||
-            "",
-
-        client_email:
-            "",
-
-        payment_status:
-            $("paymentStatus")?.value ||
-            "DUE",
-
-        payment_terms:
-            $("terms")?.value.trim() ||
-            "",
-
-        company_email:
-            "",
-
-        website:
-            THINKLIMITLESS_URL,
-
-        division:
-            "",
-
-        discount:
-            totals.discount,
-
-        tax:
-            totals.tax,
-
-        subtotal:
-            totals.subtotal,
-
-        total:
-            totals.total,
-
-        items:
-            deliverables
-
+        invoice_number: $("invoiceNo")?.value.trim() || DEFAULT_INVOICE,
+        invoice_date: $("invoiceDate")?.value || null,
+        due_date: $("dueDate")?.value || null,
+        company_name: $("brandName")?.value.trim() || "",
+        client_name: $("client")?.value.trim() || "",
+        client_address: $("address")?.value.trim() || "",
+        client_email: "",
+        payment_status: $("paymentStatus")?.value || "DUE",
+        payment_terms: $("terms")?.value.trim() || "",
+        company_email: "",
+        website: THINKLIMITLESS_URL,
+        division: "",
+        discount: totals.discount,
+        tax: totals.tax,
+        subtotal: totals.subtotal,
+        total: totals.total,
+        items: deliverables
     };
-
 }
 
-
-/* =========================================================
-   30. SAVE INVOICE
-========================================================= */
-
 async function saveInvoice() {
+    const client = window.__invoiceAuthClient || supabaseClient;
 
-    if (!supabaseClient) {
-
-        alert(
-            "Unable to save invoice: database is not configured."
-        );
-
+    if (!client) {
+        alert("Unable to save invoice: database is not configured.");
         return;
     }
 
     try {
-
-        /*
-         * Get the REAL Supabase authenticated user.
-         */
-        const {
-            data: { user },
-            error: authError
-        } = await supabaseClient.auth.getUser();
-
-
-        if (authError) {
-
-            console.error(
-                "SUPABASE AUTH ERROR:",
-                authError
-            );
-
-            alert(
-                "Your login session is missing or expired. " +
-                "Please log in again."
-            );
-
+        const { data: { user }, error: authError } = await client.auth.getUser();
+        if (authError || !user) {
+            alert("Your login session is missing or expired. Please log in again.");
             return;
         }
 
-
-        if (!user) {
-
-            alert(
-                "You must be logged in to save an invoice."
-            );
-
-            return;
-        }
-
-
-        /*
-         * Get the user's actual profile/role.
-         */
-        const {
-            data: profile,
-            error: profileError
-        } = await supabaseClient
+        const { data: profile, error: profileError } = await client
             .from("profiles")
             .select("role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
-
-        if (profileError || !profile) {
-
-            console.error(
-                "PROFILE ERROR:",
-                profileError
-            );
-
-            alert(
-                "Your user profile could not be found. " +
-                "Please contact the administrator."
-            );
-
+        if (profileError || !profile || !["admin", "employee"].includes(profile.role)) {
+            console.error("PROFILE ERROR:", profileError);
+            alert("Your user profile could not be found. Please contact the administrator.");
             return;
         }
 
+        const invoice = collectInvoiceData();
+        const invoiceWithUser = { ...invoice, user_id: user.id };
 
-        /*
-         * Collect invoice data.
-         */
-        const invoice =
-            collectInvoiceData();
-
-
-        /*
-         * Attach authenticated user's UUID.
-         *
-         * Your RLS policy checks:
-         * user_id = auth.uid()
-         */
-        const invoiceWithUser = {
-
-            ...invoice,
-
-            user_id: user.id
-
-        };
-
-
-        console.log(
-            "SAVING INVOICE FOR USER:",
-            user.id
-        );
-
-        console.log(
-            "USER ROLE:",
-            profile.role
-        );
-
-
-        /*
-         * IMPORTANT:
-         * Do NOT use .select() here.
-         */
-        const {
-            error
-        } = await supabaseClient
-            .from("invoices")
-            .insert([
-                invoiceWithUser
-            ]);
-
-
+        const { error } = await client.from("invoices").insert([invoiceWithUser]);
         if (error) {
-
-            console.error(
-                "SAVE INVOICE ERROR:",
-                error
-            );
-
-            alert(
-                "Could not save invoice.\n\n" +
-                error.message
-            );
-
+            console.error("SAVE INVOICE ERROR:", error);
+            alert("Could not save invoice.\n\n" + error.message);
             return;
         }
 
-
-        console.log(
-            "INVOICE SAVED:",
-            invoiceWithUser
-        );
-
-
-        alert(
-            "Invoice saved successfully!"
-        );
-
-
+        alert("Invoice saved successfully!");
     } catch (error) {
-
-        console.error(
-            "SAVE INVOICE FAILED:",
-            error
-        );
-
-        alert(
-            "Unable to save invoice. " +
-            "Please try logging in again."
-        );
+        console.error("SAVE INVOICE FAILED:", error);
+        alert("Unable to save invoice. Please try logging in again.");
     }
 }
-/* =========================================================
-   31. RESET INVOICE
-========================================================= */
 
 function resetInvoice() {
-
     const fields = [
-
         "invoiceNo",
         "invoiceDate",
         "dueDate",
@@ -1755,118 +593,36 @@ function resetInvoice() {
         "footerLeft",
         "brandName",
         "brandTagline"
-
     ];
 
+    fields.forEach(function (id) {
+        const field = $(id);
+        if (field) field.value = "";
+    });
 
-    fields.forEach(
-        function (id) {
-
-            const field =
-                $(id);
-
-
-            if (field) {
-
-                field.value = "";
-
-            }
-
-        }
-    );
-
-
-    if ($("currency")) {
-
-        $("currency").value =
-            "PKR";
-
-    }
-
-
-    if ($("paymentStatus")) {
-
-        $("paymentStatus").value =
-            "DUE";
-
-    }
-
-
-    if ($("hasDiscount")) {
-
-        $("hasDiscount").checked =
-            false;
-
-    }
-
-
-    if ($("discount")) {
-
-        $("discount").value =
-            "0";
-
-    }
-
-
-    if ($("discountType")) {
-
-        $("discountType").value =
-            "percent";
-
-    }
-
-
-    if ($("tax")) {
-
-        $("tax").value =
-            "0";
-
-    }
-
-
-    if ($("brandLogo")) {
-
-        $("brandLogo").value =
-            "";
-
-    }
-
+    if ($("currency")) $("currency").value = "PKR";
+    if ($("paymentStatus")) $("paymentStatus").value = "DUE";
+    if ($("hasDiscount")) $("hasDiscount").checked = false;
+    if ($("discount")) $("discount").value = "0";
+    if ($("discountType")) $("discountType").value = "percent";
+    if ($("tax")) $("tax").value = "0";
+    if ($("brandLogo")) $("brandLogo").value = "";
 
     deliverables = [];
-
     brandLogoData = "";
 
-
     renderDeliverableEditors();
-
     updateDiscountUI();
-
     updateInvoice();
-
     updateQR();
-
 }
-
-
-/* =========================================================
-   32. PRINT / PDF
-========================================================= */
 
 function printInvoice() {
-
     window.print();
-
 }
 
-
-/* =========================================================
-   33. EVENT LISTENERS
-========================================================= */
-
 function setupEventListeners() {
-
     const liveFields = [
-
         "currency",
         "invoiceNo",
         "invoiceDate",
@@ -1880,186 +636,121 @@ function setupEventListeners() {
         "footerLeft",
         "brandName",
         "brandTagline"
-
     ];
 
+    liveFields.forEach(function (id) {
+        const field = $(id);
+        if (!field) return;
+        field.addEventListener("input", updateInvoice);
+        field.addEventListener("change", updateInvoice);
+    });
 
-    liveFields.forEach(
-        function (id) {
+    if ($("invoiceNo")) $("invoiceNo").addEventListener("input", updateQR);
 
-            const field =
-                $(id);
+    if ($("hasDiscount")) $("hasDiscount").addEventListener("change", updateDiscountAndInvoice);
+    if ($("discountType")) $("discountType").addEventListener("change", updateDiscountAndInvoice);
+    if ($("discount")) $("discount").addEventListener("input", updateDiscountAndInvoice);
 
-
-            if (!field) {
-                return;
-            }
-
-
-            field.addEventListener(
-                "input",
-                updateInvoice
-            );
-
-
-            field.addEventListener(
-                "change",
-                updateInvoice
-            );
-
-        }
-    );
-
-
-    /* QR */
-
-    if ($("invoiceNo")) {
-
-        $("invoiceNo").addEventListener(
-            "input",
-            updateQR
-        );
-
-    }
-
-
-    /* DISCOUNT */
-
-    if ($("hasDiscount")) {
-
-        $("hasDiscount").addEventListener(
-            "change",
-            updateDiscountAndInvoice
-        );
-
-    }
-
-
-    if ($("discountType")) {
-
-        $("discountType").addEventListener(
-            "change",
-            updateDiscountAndInvoice
-        );
-
-    }
-
-
-    if ($("discount")) {
-
-        $("discount").addEventListener(
-            "input",
-            updateDiscountAndInvoice
-        );
-
-    }
-
-
-    /* ADD DELIVERABLE */
-
-    if ($("addDeliverable")) {
-
-        $("addDeliverable").addEventListener(
-            "click",
-            addDeliverable
-        );
-
-    }
-
-
-    /* BRAND LOGO */
-
-    if ($("brandLogo")) {
-
-        $("brandLogo").addEventListener(
-            "change",
-            handleBrandLogo
-        );
-
-    }
-
-
-    /* CLEAR */
-
-    if ($("clearBtn")) {
-
-        $("clearBtn").addEventListener(
-            "click",
-            resetInvoice
-        );
-
-    }
-
-
-    /* SAVE */
-
-    if ($("saveBtn")) {
-
-        $("saveBtn").addEventListener(
-            "click",
-            saveInvoice
-        );
-
-    }
-
-
-    /* PRINT */
-
-    if ($("printBtn")) {
-
-        $("printBtn").addEventListener(
-            "click",
-            printInvoice
-        );
-
-    }
-
+    if ($("addDeliverable")) $("addDeliverable").addEventListener("click", addDeliverable);
+    if ($("brandLogo")) $("brandLogo").addEventListener("change", handleBrandLogo);
+    if ($("clearBtn")) $("clearBtn").addEventListener("click", resetInvoice);
+    if ($("saveBtn")) $("saveBtn").addEventListener("click", saveInvoice);
+    if ($("printBtn")) $("printBtn").addEventListener("click", printInvoice);
 }
 
+window.addDeliverable = addDeliverable;
+window.removeDeliverable = removeDeliverable;
+window.updateDeliverable = updateDeliverable;
+window.saveInvoice = saveInvoice;
 
-/* =========================================================
-   34. GLOBAL FUNCTIONS
-========================================================= */
+document.addEventListener("DOMContentLoaded", async function () {
+    setupAuth();
+    setupEventListeners();
+    renderDeliverableEditors();
+    updateDiscountUI();
+    updateInvoice();
+    updateRoleAccess();
+    generateQR();
 
-window.addDeliverable =
-    addDeliverable;
-
-window.removeDeliverable =
-    removeDeliverable;
-
-window.updateDeliverable =
-    updateDeliverable;
-
-window.saveInvoice =
-    saveInvoice;
-
-
-/* =========================================================
-   35. INITIALIZE
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    async function () {
-
-        await setupAuth();
-
-        setupEventListeners();
-
-        renderDeliverableEditors();
-
-        updateDiscountUI();
-
-        updateInvoice();
-
-        updateRoleAccess();
-
-        generateQR();
-
-        console.log(
-            "Invoice Builder initialized successfully."
-        );
-
+    if (window.__invoiceAuthClient) {
+        const client = window.__invoiceAuthClient;
+        const { data: { session }, error } = await client.auth.getSession();
+        if (!error && session?.user) {
+            const { data: profile } = await client.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
+            if (profile && ["admin", "employee"].includes(profile.role)) {
+                localStorage.setItem(AUTH_ROLE_KEY, profile.role);
+                showLandingScreen();
+                updateRoleAccess();
+            }
+        }
     }
-);
-;
+
+    console.log("Invoice Builder initialized successfully.");
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

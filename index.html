@@ -12,27 +12,20 @@
 
     <title>Invoice Builder</title>
 
-
-    <!-- GOOGLE FONT -->
-
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet"
     >
-
-
-    <!-- YOUR CSS -->
 
     <link
         rel="stylesheet"
         href="style.css"
     >
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-
 <body>
-
 
 <div id="authScreen" class="auth-screen">
 
@@ -42,38 +35,30 @@
             LOGIN
         </div>
 
-        <div class="auth-role-buttons">
-
-            <button
-                type="button"
-                class="auth-role active"
-                data-role="admin"
+        <div class="auth-field">
+            <label for="loginEmail">
+                Email
+            </label>
+            <input
+                type="email"
+                id="loginEmail"
+                name="email"
+                autocomplete="username"
+                placeholder="Enter your email"
             >
-                ADMIN LOGIN
-            </button>
-
-            <button
-                type="button"
-                class="auth-role"
-                data-role="employee"
-            >
-                EMPLOYEE LOGIN
-            </button>
-
         </div>
 
         <div class="auth-field">
-
             <label for="loginPassword">
                 Password
             </label>
-
             <input
                 type="password"
                 id="loginPassword"
+                name="password"
+                autocomplete="current-password"
                 placeholder="Enter password"
             >
-
         </div>
 
         <button
@@ -89,7 +74,6 @@
     </div>
 
 </div>
-
 
 <div id="landingScreen" class="landing-screen hidden">
 
@@ -147,12 +131,7 @@
 
 </div>
 
-
 <div id="app" class="app hidden">
-
-    <!-- =====================================================
-         SIDEBAR
-    ====================================================== -->
 
     <aside class="sidebar">
 
@@ -172,864 +151,321 @@
 
         </div>
 
-
-        <!-- =================================================
-             DOCUMENT
-        ================================================== -->
-
         <section class="form-section">
-
-            <div class="section-title">
-                DOCUMENT
-            </div>
-
-
+            <div class="section-title">DOCUMENT</div>
             <div class="two-columns">
-
-
                 <div class="form-field">
-
-                    <label>
-                        Currency
-                    </label>
-
+                    <label>Currency</label>
                     <select id="currency">
-
-                        <option value="PKR">
-                            PKR
-                        </option>
-
-                        <option value="USD">
-                            USD
-                        </option>
-
-                        <option value="EUR">
-                            EUR
-                        </option>
-
-                        <option value="GBP">
-                            GBP
-                        </option>
-
+                        <option value="PKR">PKR</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
                     </select>
-
                 </div>
-
 
                 <div class="form-field">
-
-                    <label>
-                        Invoice Number
-                    </label>
-
-                    <input
-                        type="text"
-                        id="invoiceNo"
-                        placeholder="Invoice number"
-                    >
-
+                    <label>Invoice Number</label>
+                    <input type="text" id="invoiceNo" placeholder="Invoice number">
                 </div>
-
 
                 <div class="form-field">
-
-                    <label>
-                        Invoice Date
-                    </label>
-
-                    <input
-                        type="date"
-                        id="invoiceDate"
-                    >
-
+                    <label>Invoice Date</label>
+                    <input type="date" id="invoiceDate">
                 </div>
-
 
                 <div class="form-field">
-
-                    <label>
-                        Due Date
-                    </label>
-
-                    <input
-                        type="date"
-                        id="dueDate"
-                    >
-
+                    <label>Due Date</label>
+                    <input type="date" id="dueDate">
                 </div>
-
             </div>
-
         </section>
 
-
-        <!-- =================================================
-             CLIENT
-        ================================================== -->
-
         <section class="form-section">
-
-            <div class="section-title">
-                CLIENT
-            </div>
-
+            <div class="section-title">CLIENT</div>
 
             <div class="form-field">
-
-                <label>
-                    Billed To
-                </label>
-
-                <input
-                    type="text"
-                    id="client"
-                    placeholder="Client name"
-                >
-
+                <label>Billed To</label>
+                <input type="text" id="client" placeholder="Client name">
             </div>
 
-
             <div class="form-field">
-
-                <label>
-                    Client Address
-                </label>
-
-                <input
-                    type="text"
-                    id="address"
-                    placeholder="Client address"
-                >
-
+                <label>Client Address</label>
+                <input type="text" id="address" placeholder="Client address">
             </div>
 
-
             <div class="form-field">
-
-                <label>
-                    Project
-                </label>
-
-                <input
-                    type="text"
-                    id="project"
-                    placeholder="Project name"
-                >
-
+                <label>Project</label>
+                <input type="text" id="project" placeholder="Project name">
             </div>
 
-
             <div class="form-field">
-
-                <label>
-                    Payment Status
-                </label>
-
+                <label>Payment Status</label>
                 <select id="paymentStatus">
-
-                    <option value="DUE">
-                        DUE
-                    </option>
-
-                    <option value="PAID">
-                        PAID
-                    </option>
-
-                    <option value="PENDING">
-                        PENDING
-                    </option>
-
+                    <option value="DUE">DUE</option>
+                    <option value="PAID">PAID</option>
+                    <option value="PENDING">PENDING</option>
                 </select>
-
             </div>
-
         </section>
 
-
-        <!-- =================================================
-             DELIVERABLES
-        ================================================== -->
-
         <section class="form-section">
-
-            <div class="section-title">
-                DELIVERABLES
-            </div>
-
-
-            <div
-                id="deliverableEditors"
-                class="deliverable-editors"
-            ></div>
-
-
-            <button
-                type="button"
-                id="addDeliverable"
-                class="add-deliverable"
-            >
-                + ADD DELIVERABLE
-            </button>
-
+            <div class="section-title">DELIVERABLES</div>
+            <div id="deliverableEditors" class="deliverable-editors"></div>
+            <button type="button" id="addDeliverable" class="add-deliverable">+ ADD DELIVERABLE</button>
         </section>
 
-
-        <!-- =================================================
-             COMMERCIAL
-        ================================================== -->
-
         <section class="form-section">
-
-            <div class="section-title">
-                COMMERCIAL
-            </div>
-
+            <div class="section-title">COMMERCIAL</div>
 
             <div class="form-field">
-
-                <label>
-                    Original Project Fee
-                </label>
-
-                <input
-                    type="number"
-                    id="fee"
-                    min="0"
-                    value="0"
-                    readonly
-                >
-
+                <label>Original Project Fee</label>
+                <input type="number" id="fee" min="0" value="0" readonly>
             </div>
-
 
             <div class="form-field checkbox-field">
-
                 <label class="toggle-label">
-
-                    <input
-                        type="checkbox"
-                        id="hasDiscount"
-                    >
-
-                    <span>
-                        Add discount
-                    </span>
-
+                    <input type="checkbox" id="hasDiscount">
+                    <span>Add discount</span>
                 </label>
-
             </div>
 
-
-            <div
-                id="discountBlock"
-                class="discount-block"
-                hidden
-            >
-
+            <div id="discountBlock" class="discount-block" hidden>
                 <div class="two-columns">
-
-
                     <div class="form-field">
-
-                        <label>
-                            Discount Type
-                        </label>
-
+                        <label>Discount Type</label>
                         <select id="discountType">
-
-                            <option value="percent">
-                                Percent
-                            </option>
-
-                            <option value="amount">
-                                Amount
-                            </option>
-
+                            <option value="percent">Percent</option>
+                            <option value="amount">Amount</option>
                         </select>
-
                     </div>
-
 
                     <div class="form-field">
-
-                        <label id="discountInputLabel">
-                            Discount %
-                        </label>
-
-                        <input
-                            type="number"
-                            id="discount"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value="0"
-                        >
-
+                        <label id="discountInputLabel">Discount %</label>
+                        <input type="number" id="discount" min="0" max="100" step="0.01" value="0">
                     </div>
-
                 </div>
-
             </div>
-
 
             <div class="two-columns">
-
                 <div class="form-field">
-
-                    <label>
-                        Tax %
-                    </label>
-
-                    <input
-                        type="number"
-                        id="tax"
-                        min="0"
-                        value="0"
-                    >
-
+                    <label>Tax %</label>
+                    <input type="number" id="tax" min="0" value="0">
                 </div>
 
-
                 <div class="form-field">
-
                     <span class="placeholder-spacer"></span>
-
                 </div>
-
             </div>
-
 
             <div class="form-field">
-
-                <label>
-                    Payment Terms
-                </label>
-
-                <input
-                    type="text"
-                    id="terms"
-                    placeholder="Payment terms"
-                >
-
+                <label>Payment Terms</label>
+                <input type="text" id="terms" placeholder="Payment terms">
             </div>
-
         </section>
-
-
-        <!-- =================================================
-             FOOTER
-        ================================================== -->
 
         <section class="form-section">
-
-            <div class="section-title">
-                FOOTER
-            </div>
-
+            <div class="section-title">FOOTER</div>
 
             <div class="form-field">
-
-                <label>
-                    Footer Left Text
-                </label>
-
-                <input
-                    type="text"
-                    id="footerLeft"
-                    placeholder="THINKLIMITLESS 2026"
-                >
-
+                <label>Footer Left Text</label>
+                <input type="text" id="footerLeft" placeholder="THINKLIMITLESS 2026">
             </div>
-
 
             <div class="form-field">
-
-                <label>
-                    Brand Name
-                </label>
-
-                <input
-                    type="text"
-                    id="brandName"
-                    placeholder="THINKLIMITLESS"
-                >
-
+                <label>Brand Name</label>
+                <input type="text" id="brandName" placeholder="THINKLIMITLESS">
             </div>
-
 
             <div class="form-field">
-
-                <label>
-                    Brand Tagline
-                </label>
-
-                <input
-                    type="text"
-                    id="brandTagline"
-                    placeholder="AI · MEDIA · CREATIVITY"
-                >
-
+                <label>Brand Tagline</label>
+                <input type="text" id="brandTagline" placeholder="AI · MEDIA · CREATIVITY">
             </div>
-
 
             <div class="form-field">
-
-                <label>
-                    Brand Logo
-                </label>
-
-                <input
-                    type="file"
-                    id="brandLogo"
-                    accept="image/*"
-                >
-
+                <label>Brand Logo</label>
+                <input type="file" id="brandLogo" accept="image/*">
             </div>
-
-
         </section>
 
-
-        <!-- =================================================
-             ACTIONS
-        ================================================== -->
-
         <div class="actions">
-
-            <button
-                type="button"
-                id="clearBtn"
-                class="clear-button"
-            >
-                CLEAR
-            </button>
-
-
-            <button
-                type="button"
-                id="saveBtn"
-                class="save-button"
-            >
-                SAVE
-            </button>
-
-
-            <button
-                type="button"
-                id="printBtn"
-                class="print-button"
-            >
-                PRINT / PDF
-            </button>
-
+            <button type="button" id="clearBtn" class="clear-button">CLEAR</button>
+            <button type="button" id="saveBtn" class="save-button">SAVE</button>
+            <button type="button" id="printBtn" class="print-button">PRINT / PDF</button>
         </div>
-
 
     </aside>
 
-
-
-    <!-- =====================================================
-         INVOICE PREVIEW
-    ====================================================== -->
-
     <main class="preview-area">
-
-
-        <article
-            class="invoice"
-            id="invoice"
-        >
-
-
-            <!-- =================================================
-                 HEADER
-            ================================================== -->
-
+        <article class="invoice" id="invoice">
             <header class="invoice-header">
-
-
                 <div class="header-banner"></div>
-
-
-                <img
-                    src="header-overlay.1.jpg"
-                    class="header-overlay"
-                    alt=""
-                >
-
-
-                <div class="invoice-title">
-                    INVOICE
-                </div>
-
-
-                <div
-                    class="qr-number"
-                    id="qrNumber"
-                >
-                    INV-TL-2026-001
-                </div>
-
-
-                <!-- QR CODE -->
-
+                <img src="header-overlay.1.jpg" class="header-overlay" alt="">
+                <div class="invoice-title">INVOICE</div>
+                <div class="qr-number" id="qrNumber">INV-TL-2026-001</div>
                 <div class="qr-wrapper">
-
                     <div id="qr"></div>
-
                 </div>
-
-
             </header>
 
-
-
-            <!-- =================================================
-                 META
-            ================================================== -->
-
             <section class="invoice-meta">
-
-
                 <div class="meta-column">
-
-                    <div class="meta-label">
-                        BILLED TO
-                    </div>
-
-                    <div
-                        class="meta-value"
-                        id="outClient"
-                    >
-                        Client Name
-                    </div>
-
-                    <div
-                        class="meta-small"
-                        id="outAddress"
-                    >
-                        Client address
-                    </div>
-
-
+                    <div class="meta-label">BILLED TO</div>
+                    <div class="meta-value" id="outClient">Client Name</div>
+                    <div class="meta-small" id="outAddress">Client address</div>
                     <div class="payment-status">
-
-                        <span class="status-label">
-                            PAYMENT STATUS
-                        </span>
-
-                        <span
-                            id="outStatus"
-                            class="status-value"
-                        >
-                            DUE
-                        </span>
-
+                        <span class="status-label">PAYMENT STATUS</span>
+                        <span id="outStatus" class="status-value">DUE</span>
                     </div>
-
                 </div>
-
 
                 <div class="meta-column">
-
-                    <div class="meta-label">
-                        PROJECT
-                    </div>
-
-                    <div
-                        class="meta-value"
-                        id="outProject"
-                    >
-                        Project Name
-                    </div>
-
+                    <div class="meta-label">PROJECT</div>
+                    <div class="meta-value" id="outProject">Project Name</div>
                 </div>
-
 
                 <div class="meta-column issued-column">
-
-                    <div class="meta-label">
-                        ISSUED
-                    </div>
-
-                    <div
-                        class="meta-value"
-                        id="outDate"
-                    >
-                        17 AUG 2026
-                    </div>
-
+                    <div class="meta-label">ISSUED</div>
+                    <div class="meta-value" id="outDate">17 AUG 2026</div>
                 </div>
-
-
             </section>
-
-
-
-            <!-- =================================================
-                 DELIVERABLE TABLE
-            ================================================== -->
 
             <section class="invoice-deliverables">
-
-
-                <h2>
-                    DELIVERABLES
-                </h2>
-
-
+                <h2>DELIVERABLES</h2>
                 <table>
-
-
                     <thead>
-
                         <tr>
-
-                            <th>
-                                DELIVERABLE
-                            </th>
-
-                            <th>
-                                DESCRIPTION
-                            </th>
-
-                            <th>
-                                QTY
-                            </th>
-
-                            <th>
-                                AMOUNT
-                            </th>
-
-                            <th>
-                                STATUS
-                            </th>
-
+                            <th>DELIVERABLE</th>
+                            <th>DESCRIPTION</th>
+                            <th>QTY</th>
+                            <th>AMOUNT</th>
+                            <th>STATUS</th>
                         </tr>
-
                     </thead>
-
-
                     <tbody id="deliverableRows"></tbody>
-
-
                 </table>
-
-
             </section>
-
-
-
-            <!-- =================================================
-                 COMMERCIAL SUMMARY
-            ================================================== -->
 
             <section class="commercial-summary">
-
-
                 <div class="summary-left">
-
-
-                    <div class="summary-heading">
-                        COMMERCIAL SUMMARY
-                    </div>
-
+                    <div class="summary-heading">COMMERCIAL SUMMARY</div>
 
                     <div class="summary-row">
-
-                        <span>
-                            Original project fee
-                        </span>
-
-                        <strong id="outFee">
-                            PKR 0
-                        </strong>
-
+                        <span>Original project fee</span>
+                        <strong id="outFee">PKR 0</strong>
                     </div>
 
-
-                    <div
-                        class="summary-row"
-                        id="discountRow"
-                        hidden
-                    >
-
-                        <span id="discountLabel">
-                            0% discount
-                        </span>
-
-                        <strong id="outDiscount">
-                            − PKR 0
-                        </strong>
-
+                    <div class="summary-row" id="discountRow" hidden>
+                        <span id="discountLabel">0% discount</span>
+                        <strong id="outDiscount">− PKR 0</strong>
                     </div>
-
 
                     <div class="summary-row">
-
-                        <span id="taxLabel">
-                            0% tax
-                        </span>
-
-                        <strong id="outTax">
-                            + PKR 0
-                        </strong>
-
+                        <span id="taxLabel">0% tax</span>
+                        <strong id="outTax">+ PKR 0</strong>
                     </div>
-
-
                 </div>
-
 
                 <div class="total-box">
-
-                    <div class="total-label">
-                        TOTAL DUE
-                    </div>
-
-                    <div
-                        class="total-amount"
-                        id="outTotal"
-                    >
-                        PKR 0
-                    </div>
-
+                    <div class="total-label">TOTAL DUE</div>
+                    <div class="total-amount" id="outTotal">PKR 0</div>
                 </div>
-
-
             </section>
 
-
-
-            <!-- =================================================
-                 FOOTER
-            ================================================== -->
-
             <footer class="invoice-footer">
-
-
                 <div class="footer-column">
-
-                    <div class="footer-label">
-                        PAYMENT TERMS
-                    </div>
-
-                    <div
-                        class="footer-value"
-                        id="outTerms"
-                    >
-                        100% due on invoice
-                    </div>
-
+                    <div class="footer-label">PAYMENT TERMS</div>
+                    <div class="footer-value" id="outTerms">100% due on invoice</div>
                 </div>
 
-
                 <div class="footer-column">
-
-                    <div class="footer-label">
-                        PROJECT
-                    </div>
-
-                    <div
-                        class="footer-value"
-                        id="outFooterProject"
-                    >
-                        Project
-                    </div>
-
+                    <div class="footer-label">PROJECT</div>
+                    <div class="footer-value" id="outFooterProject">Project</div>
                 </div>
 
-
-                <div
-                    class="footer-column footer-brand-column"
-                >
-
+                <div class="footer-column footer-brand-column">
                     <div class="footer-brand">
-
-                        <span id="outBrandName">
-                            THINKLIMITLESS
-                        </span>
-
-
-                        <img
-                            id="outBrandLogo"
-                            class="footer-logo"
-                            alt="Brand logo"
-                            src=""
-                        >
-
+                        <span id="outBrandName">THINKLIMITLESS</span>
+                        <img id="outBrandLogo" class="footer-logo" alt="Brand logo" src="">
                     </div>
-
-
-                    <div
-                        class="footer-value"
-                        id="outBrandTagline"
-                    >
-                        AI · MEDIA · CREATIVITY
-                    </div>
-
+                    <div class="footer-value" id="outBrandTagline">AI · MEDIA · CREATIVITY</div>
                 </div>
-
-
             </footer>
 
-
-
-            <!-- =================================================
-                 BOTTOM FOOTER
-            ================================================== -->
-
             <div class="bottom-footer">
-
-                <span id="outFooterLeft">
-                    THINKLIMITLESS © 2026
-                </span>
-
-
-                <span id="footerRight">
-                    CLIENT · PROJECT
-                </span>
-
+                <span id="outFooterLeft">THINKLIMITLESS © 2026</span>
+                <span id="footerRight">CLIENT · PROJECT</span>
             </div>
-
-
         </article>
-
-
     </main>
 
 </div>
 
-
-
-<!-- =========================================================
-     QR CODE LIBRARY
-     LOAD ONCE ONLY
-========================================================= -->
-
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-></script>
-
-
-
-<!-- =========================================================
-     SUPABASE
-========================================================= -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-></script>
-
-
-
-<!-- =========================================================
-     YOUR JAVASCRIPT
-========================================================= -->
-
-<script src="script.js?v=3"></script>
-
+<script src="supabase-auth.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,35 +1,116 @@
-/* =========================================================
-   SUPABASE AUTHENTICATION
-   Email/password login, persistent sessions, profile roles, logout
-========================================================= */
+/* Supabase email/password authentication for Invoice Maker. */
 (function () {
     const SUPABASE_URL = "https://jilmmclikggptpnsibvy.supabase.co";
     const SUPABASE_KEY = "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE";
     const ROLE_KEY = "invoice_dashboard_role";
 
-    let authClient = null;
-    let authReady = false;
-
-    function $(id) {
+    function byId(id) {
         return document.getElementById(id);
     }
 
     function setLoginError(message) {
-        const element = $("loginError");
-        if (element) element.textContent = message || "";
+        const error = byId("loginError");
+        if (error) error.textContent = message || "";
     }
 
     function clearLocalAuth() {
         localStorage.removeItem(ROLE_KEY);
-        if ($("loginPassword")) $("loginPassword").value = "";
+        if (byId("loginPassword")) byId("loginPassword").value = "";
         if (typeof showLoginScreen === "function") showLoginScreen();
     }
 
-    function ensureEmailField() {
-        if ($("loginEmail")) return;
+    async function loadProfile(client, user) {
+        if (!user) {
+            clearLocalAuth();
+            return null;
+        }
 
-        const password = $("loginPassword");
-        const passwordField = password?.closest(".auth-field");
+        const { data: profile, error } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (error || !profile || !["admin", "employee"].includes(profile.role)) {
+            console.error("PROFILE ERROR:", error || "Invalid profile");
+            await client.auth.signOut();
+            setLoginError("Your account profile is missing or invalid. Contact the administrator.");
+            clearLocalAuth();
+            return null;
+        }
+
+        localStorage.setItem(ROLE_KEY, profile.role);
+        window.__invoiceAuthRole = profile.role;
+
+        if (typeof updateRoleAccess === "function") updateRoleAccess();
+        if (typeof showLandingScreen === "function") showLandingScreen();
+
+        return profile;
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const emailField = byId("loginEmail");
+        const passwordField = byId("loginPassword");
+        const loginButton = byId("loginBtn");
+
+        const email = emailField?.value.trim();
+        const password = passwordField?.value || "";
+
+        setLoginError("");
+        if (!email || !password) {
+            setLoginError("Enter your email and password.");
+            return;
+        }
+
+        if (loginButton) loginButton.disabled = true;
+
+        const client = window.__invoiceAuthClient || window.supabase?.createClient(
+            "https://jilmmclikggptpnsibvy.supabase.co",
+            "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE"
+        );
+
+        if (!client) {
+            setLoginError("Supabase client is not available.");
+            if (loginButton) loginButton.disabled = false;
+            return;
+        }
+
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+        if (loginButton) loginButton.disabled = false;
+
+        if (error) {
+            console.error("SUPABASE LOGIN ERROR:", error);
+            setLoginError(error.message || "Unable to log in.");
+            return;
+        }
+
+        await loadProfile(client, data.user);
+    }
+
+    async function handleLogout(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const client = window.__invoiceAuthClient || window.supabase?.createClient(
+            "https://jilmmclikggptpnsibvy.supabase.co",
+            "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE"
+        );
+
+        if (client) {
+            await client.auth.signOut();
+        }
+
+        clearLocalAuth();
+    }
+
+    function ensureEmailField() {
+        if (byId("loginEmail")) return;
+
+        const passwordField = byId("loginPassword")?.closest(".auth-field");
         if (!passwordField) return;
 
         const emailField = passwordField.cloneNode(true);
@@ -44,76 +125,8 @@
         input.autocomplete = "username";
         input.placeholder = "Enter your email";
 
-        password.autocomplete = "current-password";
+        byId("loginPassword").autocomplete = "current-password";
         passwordField.parentNode.insertBefore(emailField, passwordField);
-    }
-
-    async function loadProfile(user) {
-        if (!user) {
-            clearLocalAuth();
-            return null;
-        }
-
-        const { data: profile, error } = await authClient
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (error || !profile || !["admin", "employee"].includes(profile.role)) {
-            console.error("PROFILE ERROR:", error || "Invalid profile");
-            await authClient.auth.signOut();
-            setLoginError("Your account profile is missing or invalid. Contact the administrator.");
-            clearLocalAuth();
-            return null;
-        }
-
-        localStorage.setItem(ROLE_KEY, profile.role);
-        if (typeof updateRoleAccess === "function") updateRoleAccess();
-        return profile;
-    }
-
-    async function handleLogin(event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        if (!authReady) {
-            setLoginError("Authentication is still loading. Try again.");
-            return;
-        }
-
-        const email = $("loginEmail")?.value.trim();
-        const password = $("loginPassword")?.value || "";
-        const button = $("loginBtn");
-
-        setLoginError("");
-        if (!email || !password) {
-            setLoginError("Enter your email and password.");
-            return;
-        }
-
-        if (button) button.disabled = true;
-        const { data, error } = await authClient.auth.signInWithPassword({ email, password });
-        if (button) button.disabled = false;
-
-        if (error) {
-            console.error("SUPABASE LOGIN ERROR:", error);
-            setLoginError(error.message || "Unable to log in.");
-            return;
-        }
-
-        const profile = await loadProfile(data.user);
-        if (profile && typeof showLandingScreen === "function") {
-            setLoginError("");
-            showLandingScreen();
-        }
-    }
-
-    async function handleLogout(event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (authClient) await authClient.auth.signOut();
-        clearLocalAuth();
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
@@ -124,41 +137,42 @@
             return;
         }
 
-        authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
+        const client = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
             }
-        });
+        );
 
-        authReady = true;
+        window.__invoiceAuthClient = client;
 
-        // Capture-phase handlers prevent the old local-password handlers in script.js.
-        $("loginBtn")?.addEventListener("click", handleLogin, true);
-        $("loginPassword")?.addEventListener("keydown", function (event) {
+        byId("loginBtn")?.addEventListener("click", handleLogin, true);
+        byId("loginPassword")?.addEventListener("keydown", function (event) {
             if (event.key === "Enter") handleLogin(event);
         });
-        $("logoutBtn")?.addEventListener("click", handleLogout, true);
-        $("landingLogoutBtn")?.addEventListener("click", handleLogout, true);
+        byId("logoutBtn")?.addEventListener("click", handleLogout, true);
+        byId("landingLogoutBtn")?.addEventListener("click", handleLogout, true);
 
-        const { data: { session }, error } = await authClient.auth.getSession();
+        const { data: { session }, error } = await client.auth.getSession();
         if (error) {
             console.error("SUPABASE SESSION ERROR:", error);
             clearLocalAuth();
         } else if (session?.user) {
-            await loadProfile(session.user);
-            if (localStorage.getItem(ROLE_KEY) && typeof showLandingScreen === "function") {
+            const profile = await loadProfile(client, session.user);
+            if (profile && typeof showLandingScreen === "function") {
                 showLandingScreen();
             }
         } else {
             clearLocalAuth();
         }
 
-        authClient.auth.onAuthStateChange(function (event) {
-            if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-                if (event === "SIGNED_OUT") clearLocalAuth();
-            }
+        client.auth.onAuthStateChange(function (event) {
+            if (event === "SIGNED_OUT") clearLocalAuth();
         });
     });
 })();
