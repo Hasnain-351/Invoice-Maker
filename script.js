@@ -656,6 +656,24 @@ function setupEventListeners() {
     if ($("clearBtn")) $("clearBtn").addEventListener("click", resetInvoice);
     if ($("saveBtn")) $("saveBtn").addEventListener("click", saveInvoice);
     if ($("printBtn")) $("printBtn").addEventListener("click", printInvoice);
+       // Landing page actions
+    const landingScreen = $("landingScreen");
+
+    if (landingScreen) {
+        const landingButtons = landingScreen.querySelectorAll("button");
+
+        landingButtons.forEach(function (button) {
+            const text = button.textContent.trim().toUpperCase();
+
+            if (text.includes("NEW INVOICE")) {
+                button.addEventListener("click", startNewInvoice);
+            }
+
+            if (text.includes("OPEN INVOICE")) {
+                button.addEventListener("click", openExistingInvoice);
+            }
+        });
+    }
 }
 
 window.addDeliverable = addDeliverable;
