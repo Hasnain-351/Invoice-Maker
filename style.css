@@ -1427,17 +1427,11 @@ body {
 
     display: none;
 
-    width: 18px;
-
     height: 18px;
 
-    object-fit: contain;
+    width: auto;
 
-    border-radius: 50%;
-
-    background: #111;
-
-    padding: 2px;
+    max-width: 120px;
 
 }
 
