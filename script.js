@@ -753,8 +753,7 @@ async function openExistingInvoice() {
         const { data: invoice, error } = await client
             .from("invoices")
             .select("*")
-            .eq("invoice_number", invoiceNumber)
-            .maybeSingle();
+            .eq("invoice_number", invoiceNumber);
 
         if (error) {
             console.error("OPEN INVOICE ERROR:", error);
