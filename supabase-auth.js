@@ -1,98 +1,130 @@
-/* Supabase email/password authentication for Invoice Maker. */
+/* =========================================================
+   SUPABASE AUTHENTICATION
+   Email/password login, persistent sessions, profile roles, logout
+========================================================= */
 (function () {
     const SUPABASE_URL = "https://jilmmclikggptpnsibvy.supabase.co";
     const SUPABASE_KEY = "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE";
     const ROLE_KEY = "invoice_dashboard_role";
 
-    let client;
+    let authClient = null;
+    let authReady = false;
 
-    function byId(id) {
+    function $(id) {
         return document.getElementById(id);
     }
 
-    function setError(message) {
-        const error = byId("loginError");
-        if (error) error.textContent = message || "";
+    function setLoginError(message) {
+        const element = $("loginError");
+        if (element) element.textContent = message || "";
     }
 
-    function showLoggedOut() {
+    function clearLocalAuth() {
         localStorage.removeItem(ROLE_KEY);
+        if ($("loginPassword")) $("loginPassword").value = "";
         if (typeof showLoginScreen === "function") showLoginScreen();
     }
 
-    async function setAuthenticatedUser(user) {
+    function ensureEmailField() {
+        if ($("loginEmail")) return;
+
+        const password = $("loginPassword");
+        const passwordField = password?.closest(".auth-field");
+        if (!passwordField) return;
+
+        const emailField = passwordField.cloneNode(true);
+        const label = emailField.querySelector("label");
+        const input = emailField.querySelector("input");
+
+        label.textContent = "Email";
+        label.htmlFor = "loginEmail";
+        input.id = "loginEmail";
+        input.type = "email";
+        input.name = "email";
+        input.autocomplete = "username";
+        input.placeholder = "Enter your email";
+
+        password.autocomplete = "current-password";
+        passwordField.parentNode.insertBefore(emailField, passwordField);
+    }
+
+    async function loadProfile(user) {
         if (!user) {
-            showLoggedOut();
-            return;
+            clearLocalAuth();
+            return null;
         }
 
-        const { data: profile, error } = await client
+        const { data: profile, error } = await authClient
             .from("profiles")
             .select("role")
             .eq("id", user.id)
             .maybeSingle();
 
-        if (error || !profile) {
-            console.error("PROFILE ERROR:", error);
-            await client.auth.signOut();
-            setError("Your account profile was not found. Please contact the administrator.");
-            showLoggedOut();
-            return;
-        }
-
-        if (profile.role !== "admin" && profile.role !== "employee") {
-            await client.auth.signOut();
-            setError("Your account does not have a valid application role.");
-            showLoggedOut();
-            return;
+        if (error || !profile || !["admin", "employee"].includes(profile.role)) {
+            console.error("PROFILE ERROR:", error || "Invalid profile");
+            await authClient.auth.signOut();
+            setLoginError("Your account profile is missing or invalid. Contact the administrator.");
+            clearLocalAuth();
+            return null;
         }
 
         localStorage.setItem(ROLE_KEY, profile.role);
         if (typeof updateRoleAccess === "function") updateRoleAccess();
-        if (typeof showLandingScreen === "function") showLandingScreen();
+        return profile;
     }
 
-    async function login(event) {
+    async function handleLogin(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        const email = byId("loginEmail").value.trim();
-        const password = byId("loginPassword").value;
-        const button = byId("loginBtn");
-
-        setError("");
-        if (!email || !password) {
-            setError("Enter your email and password.");
+        if (!authReady) {
+            setLoginError("Authentication is still loading. Try again.");
             return;
         }
 
-        button.disabled = true;
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
-        button.disabled = false;
+        const email = $("loginEmail")?.value.trim();
+        const password = $("loginPassword")?.value || "";
+        const button = $("loginBtn");
+
+        setLoginError("");
+        if (!email || !password) {
+            setLoginError("Enter your email and password.");
+            return;
+        }
+
+        if (button) button.disabled = true;
+        const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+        if (button) button.disabled = false;
 
         if (error) {
-            console.error("LOGIN ERROR:", error);
-            setError(error.message || "Unable to log in.");
+            console.error("SUPABASE LOGIN ERROR:", error);
+            setLoginError(error.message || "Unable to log in.");
             return;
         }
 
-        await setAuthenticatedUser(data.user);
+        const profile = await loadProfile(data.user);
+        if (profile && typeof showLandingScreen === "function") {
+            setLoginError("");
+            showLandingScreen();
+        }
     }
 
-    async function logout(event) {
+    async function handleLogout(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        await client.auth.signOut();
-        showLoggedOut();
+        if (authClient) await authClient.auth.signOut();
+        clearLocalAuth();
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-        if (!window.supabase || !window.supabase.createClient) {
-            setError("Supabase could not be loaded. Check your internet connection.");
+        ensureEmailField();
+
+        if (!window.supabase?.createClient) {
+            setLoginError("Supabase could not be loaded. Check your internet connection.");
             return;
         }
 
-        client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
@@ -100,31 +132,33 @@
             }
         });
 
-        const password = byId("loginPassword");
-        const passwordField = password && password.closest(".auth-field");
-        if (password && passwordField && !byId("loginEmail")) {
-            const emailField = passwordField.cloneNode(true);
-            emailField.querySelector("label").textContent = "Email";
-            const email = emailField.querySelector("input");
-            email.id = "loginEmail";
-            email.type = "email";
-            email.name = "email";
-            email.placeholder = "Enter email";
-            passwordField.parentNode.insertBefore(emailField, passwordField);
+        authReady = true;
+
+        // Capture-phase handlers prevent the old local-password handlers in script.js.
+        $("loginBtn")?.addEventListener("click", handleLogin, true);
+        $("loginPassword")?.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") handleLogin(event);
+        });
+        $("logoutBtn")?.addEventListener("click", handleLogout, true);
+        $("landingLogoutBtn")?.addEventListener("click", handleLogout, true);
+
+        const { data: { session }, error } = await authClient.auth.getSession();
+        if (error) {
+            console.error("SUPABASE SESSION ERROR:", error);
+            clearLocalAuth();
+        } else if (session?.user) {
+            await loadProfile(session.user);
+            if (localStorage.getItem(ROLE_KEY) && typeof showLandingScreen === "function") {
+                showLandingScreen();
+            }
+        } else {
+            clearLocalAuth();
         }
 
-        byId("loginBtn")?.addEventListener("click", login, true);
-        byId("loginPassword")?.addEventListener("keydown", function (event) {
-            if (event.key === "Enter") login(event);
-        });
-        byId("logoutBtn")?.addEventListener("click", logout, true);
-        byId("landingLogoutBtn")?.addEventListener("click", logout, true);
-
-        const { data: { session } } = await client.auth.getSession();
-        await setAuthenticatedUser(session?.user || null);
-
-        client.auth.onAuthStateChange(function (event, session) {
-            if (event === "SIGNED_OUT") showLoggedOut();
+        authClient.auth.onAuthStateChange(function (event) {
+            if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+                if (event === "SIGNED_OUT") clearLocalAuth();
+            }
         });
     });
 })();
