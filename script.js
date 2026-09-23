@@ -323,12 +323,9 @@ function setupAuth() {
         }
     });
 
-    if (!localStorage.getItem(AUTH_ROLE_KEY)) {
-        showLoginScreen();
-    } else {
-        showLandingScreen();
-        updateRoleAccess();
-    }
+    currentRole = null;
+    localStorage.removeItem(AUTH_ROLE_KEY);
+    showLoginScreen();
 }
 
 
