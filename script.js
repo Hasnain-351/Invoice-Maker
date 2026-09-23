@@ -662,7 +662,112 @@ window.addDeliverable = addDeliverable;
 window.removeDeliverable = removeDeliverable;
 window.updateDeliverable = updateDeliverable;
 window.saveInvoice = saveInvoice;
+// =========================================================
+// LANDING PAGE INVOICE ACTIONS
+// =========================================================
 
+function startNewInvoice() {
+    console.log("NEW INVOICE clicked");
+
+    resetInvoice();
+
+    // Generate a fresh invoice number
+    const invoiceNumberField = $("invoiceNo");
+
+    if (invoiceNumberField) {
+        const year = new Date().getFullYear();
+        invoiceNumberField.value = `INV-TL-${year}-001`;
+    }
+
+    updateInvoice();
+    updateQR();
+
+    showDashboard();
+}
+
+
+async function openExistingInvoice() {
+    console.log("OPEN INVOICE clicked");
+
+    const client = window.__invoiceAuthClient || supabaseClient;
+
+    if (!client) {
+        alert("Database connection is not available.");
+        return;
+    }
+
+    // Find the invoice number input on the landing screen.
+    // This works even if your input does not have a specific ID.
+    const landingScreen = $("landingScreen");
+
+    if (!landingScreen) {
+        alert("Landing screen not found.");
+        return;
+    }
+
+    const input = landingScreen.querySelector("input");
+
+    if (!input) {
+        alert("Please enter an invoice number.");
+        return;
+    }
+
+    const invoiceNumber = input.value.trim();
+
+    if (!invoiceNumber) {
+        alert("Please enter an invoice number.");
+        input.focus();
+        return;
+    }
+
+    try {
+        const {
+            data: { user },
+            error: authError
+        } = await client.auth.getUser();
+
+        if (authError || !user) {
+            alert("Your login session has expired. Please log in again.");
+            showLoginScreen();
+            return;
+        }
+
+        const { data: invoice, error } = await client
+            .from("invoices")
+            .select("*")
+            .eq("invoice_number", invoiceNumber)
+            .maybeSingle();
+
+        if (error) {
+            console.error("OPEN INVOICE ERROR:", error);
+            alert("Could not open invoice.\n\n" + error.message);
+            return;
+        }
+
+        if (!invoice) {
+            alert(`Invoice "${invoiceNumber}" was not found.`);
+            return;
+        }
+
+        console.log("OPENED INVOICE:", invoice);
+
+        applySavedInvoice(invoice);
+
+        showDashboard();
+        updateRoleAccess();
+        updateInvoice();
+        updateQR();
+
+    } catch (error) {
+        console.error("OPEN INVOICE FAILED:", error);
+        alert("Unable to open invoice. Please try again.");
+    }
+}
+
+
+// Expose functions globally
+window.startNewInvoice = startNewInvoice;
+window.openExistingInvoice = openExistingInvoice;
 document.addEventListener("DOMContentLoaded", async function () {
     setupAuth();
     setupEventListeners();
