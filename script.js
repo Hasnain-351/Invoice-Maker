@@ -546,38 +546,133 @@ async function saveInvoice() {
     }
 
     try {
-        const { data: { user }, error: authError } = await client.auth.getUser();
+        // 1. Check logged-in user
+        const {
+            data: { user },
+            error: authError
+        } = await client.auth.getUser();
+
         if (authError || !user) {
             alert("Your login session is missing or expired. Please log in again.");
             return;
         }
 
-        const { data: profile, error: profileError } = await client
+        // 2. Check user profile
+        const {
+            data: profile,
+            error: profileError
+        } = await client
             .from("profiles")
             .select("role")
             .eq("id", user.id)
             .maybeSingle();
 
-        if (profileError || !profile || !["admin", "employee"].includes(profile.role)) {
+        if (
+            profileError ||
+            !profile ||
+            !["admin", "employee"].includes(profile.role)
+        ) {
             console.error("PROFILE ERROR:", profileError);
             alert("Your user profile could not be found. Please contact the administrator.");
             return;
         }
 
+        // 3. Collect invoice data
         const invoice = collectInvoiceData();
-        const invoiceWithUser = { ...invoice, user_id: user.id };
 
-        const { error } = await client.from("invoices").insert([invoiceWithUser]);
-        if (error) {
-            console.error("SAVE INVOICE ERROR:", error);
-            alert("Could not save invoice.\n\n" + error.message);
+        if (!invoice.invoice_number) {
+            alert("Invoice number is missing.");
             return;
         }
 
-        alert("Invoice saved successfully!");
+        const invoiceWithUser = {
+            ...invoice,
+            user_id: user.id
+        };
+
+        console.log("SAVE INVOICE:", invoiceWithUser);
+
+        // 4. Check whether this invoice number already exists
+        const {
+            data: existingInvoices,
+            error: lookupError
+        } = await client
+            .from("invoices")
+            .select("id, invoice_number, user_id, updated_at")
+            .eq("invoice_number", invoice.invoice_number);
+
+        if (lookupError) {
+            console.error("INVOICE LOOKUP ERROR:", lookupError);
+            alert("Could not check whether this invoice already exists.\n\n" + lookupError.message);
+            return;
+        }
+
+        console.log("EXISTING INVOICES:", existingInvoices);
+
+        // 5. If duplicates already exist, STOP instead of creating another one
+        if (existingInvoices.length > 1) {
+            console.error(
+                "DUPLICATE INVOICE NUMBER:",
+                invoice.invoice_number,
+                existingInvoices
+            );
+
+            alert(
+                "This invoice number already exists multiple times in the database.\n\n" +
+                "Invoice: " + invoice.invoice_number + "\n" +
+                "Existing records: " + existingInvoices.length + "\n\n" +
+                "No new invoice was created. Please contact the administrator to resolve the duplicate."
+            );
+
+            return;
+        }
+
+        // 6. No existing invoice → INSERT
+        if (existingInvoices.length === 0) {
+            const { data, error } = await client
+                .from("invoices")
+                .insert([invoiceWithUser])
+                .select()
+                .single();
+
+            if (error) {
+                console.error("INSERT INVOICE ERROR:", error);
+                alert("Could not save invoice.\n\n" + error.message);
+                return;
+            }
+
+            console.log("NEW INVOICE CREATED:", data);
+
+            alert("Invoice saved successfully!");
+            return;
+        }
+
+        // 7. Exactly one existing invoice → UPDATE it
+        const existingInvoice = existingInvoices[0];
+
+        const {
+            data: updatedInvoice,
+            error: updateError
+        } = await client
+            .from("invoices")
+            .update(invoiceWithUser)
+            .eq("id", existingInvoice.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error("UPDATE INVOICE ERROR:", updateError);
+            alert("Could not update invoice.\n\n" + updateError.message);
+            return;
+        }
+
+        console.log("INVOICE UPDATED:", updatedInvoice);
+
+        alert("Invoice updated successfully!");
+
     } catch (error) {
         console.error("SAVE INVOICE FAILED:", error);
-        alert("Unable to save invoice. Please try logging in again.");
+        alert("Unable to save invoice.\n\n" + error.message);
     }
 }
 
