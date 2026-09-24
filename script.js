@@ -809,8 +809,6 @@ async function openExistingInvoice() {
         return;
     }
 
-    // Find the invoice number input on the landing screen.
-    // This works even if your input does not have a specific ID.
     const landingScreen = $("landingScreen");
 
     if (!landingScreen) {
@@ -834,6 +832,7 @@ async function openExistingInvoice() {
     }
 
     try {
+        // Check login
         const {
             data: { user },
             error: authError
@@ -845,10 +844,15 @@ async function openExistingInvoice() {
             return;
         }
 
-        const { data: invoice, error } = await client
+        // Fetch invoice
+        const {
+            data: invoices,
+            error
+        } = await client
             .from("invoices")
             .select("*")
-            .eq("invoice_number", invoiceNumber);
+            .eq("invoice_number", invoiceNumber)
+            .order("updated_at", { ascending: false });
 
         if (error) {
             console.error("OPEN INVOICE ERROR:", error);
@@ -856,14 +860,25 @@ async function openExistingInvoice() {
             return;
         }
 
-        if (!invoice) {
+        console.log("OPENED INVOICES:", invoices);
+
+        // Nothing found
+        if (!invoices || invoices.length === 0) {
             alert(`Invoice "${invoiceNumber}" was not found.`);
             return;
         }
 
-        console.log("OPENED INVOICE:", invoice);
+        // If duplicates exist, use the most recently updated one
+        const invoice = invoices[0];
 
+        console.log("SELECTED INVOICE:", invoice);
+
+        // IMPORTANT:
+        // applySavedInvoice expects ONE invoice object,
+        // not the entire array.
         applySavedInvoice(invoice);
+
+        console.log("INVOICE APPLIED TO UI");
 
         showDashboard();
         updateRoleAccess();
@@ -875,8 +890,6 @@ async function openExistingInvoice() {
         alert("Unable to open invoice. Please try again.");
     }
 }
-
-
 // Expose functions globally
 window.startNewInvoice = startNewInvoice;
 window.openExistingInvoice = openExistingInvoice;
