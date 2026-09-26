@@ -301,12 +301,14 @@ function renderDeliverableTable() {
     const currency = getCurrency();
 
     table.innerHTML = deliverables.map(function (item, index) {
-        const milestone = "M" + String(index + 1).padStart(2, "0");
-        const description = [item.name || "Deliverable", item.description || ""].filter(Boolean).join(" — ");
+        const indexLabel = String(index + 1).padStart(2, "0");
+        const shortName = (item.name || "SPA").trim().toUpperCase().split(/\s+/)[0].slice(0, 3);
+        const milestone = `${indexLabel} ${shortName}`;
+        const description = item.description || item.name || "Milestone deliverable";
         return `
             <tr>
                 <td><span class="deliverable-name">${milestone}</span></td>
-                <td>${escapeHTML(description)}${item.qty ? ` <span class="meta-small">(x${item.qty})</span>` : ""}</td>
+                <td>${escapeHTML(description)}${item.qty ? ` <span class="meta-small">x${item.qty}</span>` : ""}</td>
                 <td><span class="deliverable-status ${(item.status || "PENDING").toLowerCase()}">${(item.status || "PENDING").toUpperCase()}</span></td>
                 <td>${currency} ${formatMoney((item.qty || 0) * (item.amount || 0))}</td>
             </tr>
@@ -934,7 +936,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     console.log("Invoice Builder initialized successfully.");
 });
-
 
 
 
