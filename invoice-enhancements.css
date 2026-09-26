@@ -1,0 +1,51 @@
+/* Invoice customization enhancements. */
+
+.footer-logo {
+    width: 96px;
+    height: 96px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.footer-brand-column .footer-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.payment-breakdown {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.payment-breakdown .summary-row {
+    margin: 0;
+}
+
+.partial-payment-fields {
+    margin-top: 8px;
+}
+
+.partial-payment-fields[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 600px) {
+    .footer-brand-column .footer-brand {
+        justify-content: flex-start;
+    }
+
+    .footer-logo {
+        width: 72px;
+        height: 72px;
+    }
+}
+
+@media print {
+    .footer-logo {
+        width: 96px !important;
+        height: 96px !important;
+    }
+}
