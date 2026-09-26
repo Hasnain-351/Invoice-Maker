@@ -763,17 +763,6 @@ body {
    LAYER 1 — BANNER
 ========================================================= */
 
-/*
-    IMPORTANT:
-
-    This element appears BEFORE
-    .header-overlay in the HTML.
-
-    Therefore it is painted first.
-
-    NO z-index.
-*/
-
 .header-banner {
 
     position: absolute;
@@ -802,15 +791,6 @@ body {
 /* =========================================================
    LAYER 2 — IMAGE
 ========================================================= */
-
-/*
-    This image appears AFTER
-    .header-banner in the DOM.
-
-    Therefore it paints on top.
-
-    NO z-index.
-*/
 
 .header-overlay {
 
@@ -999,40 +979,6 @@ body {
 }
 
 
-.issued-column {
-
-    text-align: right;
-
-}
-
-
-/* =========================================================
-   PAYMENT STATUS
-========================================================= */
-
-.payment-status {
-
-    display: flex;
-
-    gap: 9px;
-
-    align-items: center;
-
-    margin-top: 17px;
-
-}
-
-
-.status-label,
-.status-value {
-
-    font-size: 7px;
-
-    font-weight: 700;
-
-}
-
-
 /* =========================================================
    DELIVERABLES
 ========================================================= */
@@ -1047,12 +993,12 @@ body {
 
 .invoice-deliverables h2 {
 
-    margin:
-        0 0 13px;
+    margin: 0 0 10px;
 
     font-size: 10px;
 
-    font-weight: 700;
+    letter-spacing:
+        .08em;
 
 }
 
@@ -1061,97 +1007,45 @@ body {
 
     width: 100%;
 
-    border-collapse:
-        collapse;
-
-    table-layout:
-        fixed;
+    border-collapse: collapse;
 
 }
 
 
 .invoice-deliverables th {
 
-    padding:
-        8px 0;
+    padding: 8px;
 
-    border-top:
-        1px solid
-        #e5e5e5;
+    border-top: 1px solid #ddd;
 
-    border-bottom:
-        1px solid
-        #e5e5e5;
+    border-bottom: 1px solid #ddd;
 
-    color: #858585;
+    color: #777;
 
-    font-size: 6px;
+    font-size: 7px;
 
     text-align: left;
-
-    text-transform: uppercase;
 
 }
 
 
 .invoice-deliverables td {
 
-    padding:
-        11px 0;
+    padding: 10px 8px;
 
-    border-bottom:
-        1px solid
-        #ededed;
+    border-bottom: 1px solid #eee;
 
-    color: #444;
-
-    font-size: 8px;
-
-}
-
-
-.invoice-deliverables th:nth-child(1),
-.invoice-deliverables td:nth-child(1) {
-
-    width: 28%;
-
-}
-
-
-.invoice-deliverables th:nth-child(2),
-.invoice-deliverables td:nth-child(2) {
-
-    width: 31%;
+    font-size: 9px;
 
 }
 
 
 .invoice-deliverables th:nth-child(3),
-.invoice-deliverables td:nth-child(3) {
-
-    width: 8%;
-
-    text-align: center;
-
-}
-
-
+.invoice-deliverables td:nth-child(3),
 .invoice-deliverables th:nth-child(4),
 .invoice-deliverables td:nth-child(4) {
 
-    width: 17%;
-
     text-align: right;
-
-}
-
-
-.invoice-deliverables th:nth-child(5),
-.invoice-deliverables td:nth-child(5) {
-
-    width: 16%;
-
-    text-align: center;
 
 }
 
@@ -1160,65 +1054,56 @@ body {
 
     font-weight: 700;
 
-    text-transform: uppercase;
-
 }
 
 
 .deliverable-status {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-block;
 
-    padding:
-        4px 7px;
+    padding: 3px 6px;
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
-    font-size: 6px;
+    background: #f3f3f3;
+
+    font-size: 7px;
+
     font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-
-}
-
-
-.deliverable-status.pending {
-
-    background: #fff1d6;
-    color: #8a5a00;
 
 }
 
 
 .deliverable-status.paid {
 
-    background: #daf5de;
-    color: #18652d;
+    background: #e8f6ea;
+
+    color: #175b2a;
 
 }
 
 
+.deliverable-status.pending,
 .deliverable-status.partial {
 
-    background: #e7e7ff;
-    color: #3d3d9e;
+    background: #fff3dd;
+
+    color: #805300;
 
 }
 
 
 .deliverable-status.overdue {
 
-    background: #fde2e2;
-    color: #a22424;
+    background: #fde8e8;
+
+    color: #962626;
 
 }
 
 
 /* =========================================================
-   COMMERCIAL
+   COMMERCIAL SUMMARY
 ========================================================= */
 
 .commercial-summary {
@@ -1229,25 +1114,24 @@ body {
         1fr
         1fr;
 
-    gap: 30px;
+    gap: 28px;
 
     margin:
-        30px 34px 0;
+        26px 34px 0;
 
 }
 
 
 .summary-heading {
 
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 
-    color: #858585;
+    font-size: 8px;
 
-    font-size: 7px;
+    font-weight: 700;
 
-    font-weight: 600;
-
-    text-transform: uppercase;
+    letter-spacing:
+        .08em;
 
 }
 
@@ -1256,61 +1140,41 @@ body {
 
     display: flex;
 
-    align-items: center;
-
     justify-content: space-between;
 
-    gap: 12px;
+    gap: 16px;
 
-    margin: 7px 0;
+    margin: 8px 0;
 
-    color: #656565;
+    color: #555;
 
-    font-size: 8px;
-
-}
-
-
-.summary-row span {
-
-    flex: 1;
-
-    min-width: 0;
+    font-size: 9px;
 
 }
 
 
 .summary-row strong {
 
-    display: block;
+    color: #111;
 
     min-width: 120px;
 
-    color: #333;
-
-    font-weight: 500;
+    font-size: 10px;
 
     text-align: right;
 
 }
 
 
-/* =========================================================
-   TOTAL
-========================================================= */
-
 .total-box {
 
-    min-height: 82px;
+    min-height: 110px;
 
-    padding:
-        17px 18px;
+    padding: 16px;
 
-    background:
-        #111214;
+    background: #111214;
 
-    border-radius:
-        10px;
+    border-radius: 14px;
 
     color: white;
 
@@ -1321,22 +1185,23 @@ body {
 
     margin-bottom: 10px;
 
-    color: #bfc0c2;
+    color: #bfc1c4;
 
-    font-size: 7px;
+    font-size: 8px;
 
-    font-weight: 600;
+    font-weight: 700;
 
-    text-transform: uppercase;
+    letter-spacing:
+        .08em;
 
 }
 
 
 .total-amount {
 
-    font-size: 21px;
+    font-size: 26px;
 
-    font-weight: 600;
+    font-weight: 700;
 
 }
 
@@ -1350,49 +1215,43 @@ body {
     display: grid;
 
     grid-template-columns:
-        1.2fr
-        1.2fr
+        1fr
+        1fr
         1fr;
 
-    gap: 20px;
-    row-gap: 18px;
+    gap: 28px;
 
     margin:
-        115px 34px 0;
+        36px 34px 0;
 
-    padding-top: 10px;
+    padding-top: 16px;
 
-    border-top:
-        1px solid
-        #ededed;
+    border-top: 1px solid #ddd;
 
 }
 
 
 .footer-label {
 
-    margin-bottom: 9px;
+    margin-bottom: 6px;
 
     color: #858585;
 
     font-size: 7px;
 
-    font-weight: 600;
+    font-weight: 700;
 
-    line-height: 2;
-
-    text-transform: uppercase;
+    letter-spacing:
+        .08em;
 
 }
 
 
 .footer-value {
 
-    color: #777;
+    font-size: 9px;
 
-    font-size: 7px;
-
-    line-height: 2;
+    line-height: 1.5;
 
 }
 
@@ -1410,15 +1269,11 @@ body {
 
     align-items: center;
 
-    justify-content: flex-end;
-
     gap: 6px;
 
-    font-size: 8px;
+    font-size: 10px;
 
-    font-weight: 800;
-
-    line-height: 1.8;
+    font-weight: 700;
 
 }
 
@@ -1427,11 +1282,11 @@ body {
 
     display: none;
 
-    height: 18px;
+    width: 20px;
 
-    width: auto;
+    height: 20px;
 
-    max-width: 120px;
+    object-fit: contain;
 
 }
 
@@ -1443,24 +1298,28 @@ body {
 }
 
 
-/* =========================================================
-   BOTTOM FOOTER
-========================================================= */
-
 .bottom-footer {
 
     display: flex;
 
     justify-content: space-between;
 
+    gap: 16px;
+
     margin:
-        25px 34px 18px;
+        18px 34px 0;
 
-    color: #aaa;
+    padding:
+        12px 0 18px;
 
-    font-size: 6px;
+    border-top: 1px solid #eee;
 
-    text-transform: uppercase;
+    color: #888;
+
+    font-size: 7px;
+
+    letter-spacing:
+        .05em;
 
 }
 
@@ -1468,6 +1327,25 @@ body {
 /* =========================================================
    RESPONSIVE
 ========================================================= */
+
+@media (max-width: 1200px) {
+
+    .app {
+
+        grid-template-columns:
+            300px
+            minmax(0, 1fr);
+
+    }
+
+    .sidebar {
+
+        width: 300px;
+
+    }
+
+}
+
 
 @media (max-width: 900px) {
 
@@ -1477,78 +1355,19 @@ body {
 
     }
 
-
     .sidebar {
 
-        position: relative;
-
         width: 100%;
-
         height: auto;
-
-        border-right: 0;
-
-        border-bottom:
-            1px solid
-            #ddd;
+        position: static;
 
     }
-
 
     .preview-area {
 
-        padding:
-            22px 10px 40px;
+        padding: 24px 10px 44px;
 
     }
-
-
-    .invoice-header {
-
-        height: 300px;
-
-    }
-
-
-    .header-background {
-
-        height: 180px;
-
-    }
-
-
-    .invoice-title {
-
-        left: 22px;
-
-        bottom: 23px;
-
-        font-size: 54px;
-
-    }
-
-
-    .qr-wrapper {
-
-        right: 22px;
-
-        bottom: 25px;
-
-        width: 106px;
-
-        height: 106px;
-
-    }
-
-
-    .qr-number {
-
-        right: 23px;
-
-        bottom: 145px;
-
-    }
-
 
     .invoice-meta {
 
@@ -1560,7 +1379,6 @@ body {
 
     }
 
-
     .invoice-deliverables {
 
         margin-left: 22px;
@@ -1569,7 +1387,6 @@ body {
 
     }
 
-
     .commercial-summary {
 
         margin-left: 22px;
@@ -1577,7 +1394,6 @@ body {
         margin-right: 22px;
 
     }
-
 
     .invoice-footer {
 
@@ -1588,7 +1404,6 @@ body {
         margin-top: 80px;
 
     }
-
 
     .bottom-footer {
 
@@ -1609,13 +1424,11 @@ body {
 
     }
 
-
     .form-section {
 
         padding: 10px;
 
     }
-
 
     .two-columns {
 
@@ -1624,20 +1437,17 @@ body {
 
     }
 
-
     .actions {
 
         flex-direction: column;
 
     }
 
-
     .invoice-header {
 
         height: 240px;
 
     }
-
 
     .invoice-title {
 
@@ -1647,7 +1457,6 @@ body {
         font-size: 38px;
 
     }
-
 
     .qr-wrapper {
 
@@ -1771,52 +1580,64 @@ body {
 
 @media print {
 
-    body {
-
-        background: white;
-
-    }
-
-
-    .sidebar {
-
-        display: none;
-
-    }
-
-
-    .app {
-
-        display: block;
-
-    }
-
-
-    .preview-area {
-
-        padding: 0;
-
-    }
-
-
-    .invoice {
-
-        width: 210mm;
-
-        min-height: 297mm;
-
-        box-shadow: none;
-
-        border-radius: 0;
-
-    }
-
-
     @page {
 
         size: A4;
 
         margin: 0;
+
+    }
+
+    html,
+    body {
+
+        width: 210mm;
+        min-height: 297mm;
+        background: #ffffff;
+
+    }
+
+    .auth-screen,
+    .landing-screen,
+    .sidebar,
+    .actions {
+
+        display: none !important;
+
+    }
+
+    .app {
+
+        display: block;
+        min-height: 0;
+
+    }
+
+    .preview-area {
+
+        display: block;
+        width: 210mm;
+        min-width: 0;
+        padding: 0;
+        overflow: visible;
+
+    }
+
+    .invoice {
+
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+
+    }
+
+    .invoice-header {
+
+        border-radius: 0;
 
     }
 
@@ -2232,11 +2053,49 @@ body {
 }
 
 @media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    html,
+    body {
+        width: 210mm;
+        min-height: 297mm;
+        background: #ffffff;
+    }
+
+    .auth-screen,
+    .landing-screen,
+    .sidebar,
+    .actions {
+        display: none !important;
+    }
+
+    .app {
+        display: block;
+        min-height: 0;
+    }
+
+    .preview-area {
+        display: block;
+        width: 210mm;
+        min-width: 0;
+        padding: 0;
+        overflow: visible;
+    }
+
     .invoice {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
         border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
     }
 
     .invoice-header {
-        border-radius: 0 0 20px 20px;
+        border-radius: 0;
     }
 }
