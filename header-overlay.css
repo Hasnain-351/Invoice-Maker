@@ -29,3 +29,78 @@
         background-position: center center;
     }
 }
+
+/* Keep printed/PDF invoices visually consistent with the on-screen preview. */
+@media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    html,
+    body {
+        width: 100%;
+        min-height: 297mm;
+        background: #eeeeec !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .auth-screen,
+    .landing-screen,
+    .sidebar,
+    .actions {
+        display: none !important;
+    }
+
+    .app {
+        display: block !important;
+        min-height: 0;
+        background: #eeeeec !important;
+    }
+
+    .preview-area {
+        display: block !important;
+        width: 100%;
+        min-width: 0;
+        padding: 12mm;
+        overflow: visible;
+        background: #eeeeec !important;
+    }
+
+    .invoice {
+        width: 100% !important;
+        min-height: 0 !important;
+        margin: 0 auto !important;
+        border: 1px solid #dfdfdf !important;
+        border-radius: 24px !important;
+        box-shadow: 0 18px 48px rgba(16, 16, 16, 0.1) !important;
+        overflow: hidden !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .invoice-header {
+        border-radius: 24px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .invoice-header::before {
+        background-image: url("Header-Overlay.jpeg") !important;
+        background-repeat: no-repeat !important;
+        background-position: center center !important;
+        background-size: cover !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .invoice-body,
+    .total-box,
+    .invoice-footer,
+    .bottom-footer {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
