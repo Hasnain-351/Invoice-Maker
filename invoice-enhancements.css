@@ -1,8 +1,7 @@
-/* Invoice customization enhancements. */
-
+/* Invoice enhancements: larger footer logo, payment breakdown, and editable footer project name. */
 .footer-logo {
-    width: 96px;
-    height: 96px;
+    width: 96px !important;
+    height: 96px !important;
     max-width: 100%;
     object-fit: contain;
 }
@@ -16,7 +15,7 @@
 
 .payment-breakdown {
     display: grid;
-    gap: 6px;
+    gap: 5px;
     margin-top: 10px;
 }
 
@@ -24,12 +23,11 @@
     margin: 0;
 }
 
-.partial-payment-fields {
-    margin-top: 8px;
-}
-
-.partial-payment-fields[hidden] {
-    display: none !important;
+.enhancement-note {
+    margin-top: 5px;
+    color: #777;
+    font-size: 8px;
+    line-height: 1.35;
 }
 
 @media (max-width: 600px) {
@@ -38,8 +36,8 @@
     }
 
     .footer-logo {
-        width: 72px;
-        height: 72px;
+        width: 72px !important;
+        height: 72px !important;
     }
 }
 
