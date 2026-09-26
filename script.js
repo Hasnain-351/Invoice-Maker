@@ -301,15 +301,16 @@ function renderDeliverableTable() {
     const currency = getCurrency();
 
     table.innerHTML = deliverables.map(function (item, index) {
+        const indexLabel = String(index + 1).padStart(2, "0");
+        const shortName = (item.name || "SPA").trim().toUpperCase().split(/\s+/)[0].slice(0, 3);
+        const milestone = `${indexLabel} ${shortName}`;
+        const description = item.description || item.name || "Milestone deliverable";
         return `
             <tr>
-                <td>
-                    <span class="deliverable-name">${String(index + 1).padStart(2, "0")} &nbsp; ${escapeHTML(item.name || "DELIVERABLE")}</span>
-                </td>
-                <td>${escapeHTML(item.description || "")}</td>
-                <td>${item.qty || 0}</td>
-                <td>${currency} ${formatMoney(item.amount)}</td>
+                <td><span class="deliverable-name">${milestone}</span></td>
+                <td>${escapeHTML(description)}${item.qty ? ` <span class="meta-small">x${item.qty}</span>` : ""}</td>
                 <td><span class="deliverable-status ${(item.status || "PENDING").toLowerCase()}">${(item.status || "PENDING").toUpperCase()}</span></td>
+                <td>${currency} ${formatMoney((item.qty || 0) * (item.amount || 0))}</td>
             </tr>
         `;
     }).join("");
@@ -410,6 +411,7 @@ function updateProject() {
     const client = $("client")?.value.trim() || "CLIENT";
 
     if ($("outProject")) $("outProject").textContent = project;
+    if ($("outFooterProject")) $("outFooterProject").textContent = project;
     if ($("footerRight")) $("footerRight").textContent = (client + " · " + project).toUpperCase();
 }
 
@@ -428,6 +430,20 @@ function updateInvoiceDate() {
     $("outDate").textContent = formatDate($("invoiceDate")?.value);
 }
 
+function updatePaymentPlan() {
+    const dueDate = $("dueDate")?.value;
+    const terms = $("terms")?.value.trim();
+    const output = $("outPaymentPlan");
+    if (!output) return;
+
+    if (dueDate) {
+        output.textContent = "Due by " + formatDate(dueDate);
+        return;
+    }
+
+    output.textContent = terms || "Milestone based";
+}
+
 function updateInvoiceNumber() {
     const invoiceNumber = $("invoiceNo")?.value.trim() || DEFAULT_INVOICE;
     if ($("qrNumber")) $("qrNumber").textContent = invoiceNumber;
@@ -435,6 +451,8 @@ function updateInvoiceNumber() {
 
 function updateQR() {
     updateInvoiceNumber();
+    const invoiceNumber = $("invoiceNo")?.value.trim() || DEFAULT_INVOICE;
+    generateQR(invoiceNumber);
 }
 
 function updatePaymentTerms() {
@@ -478,7 +496,7 @@ function updateFooter() {
     if ($("outFooterLeft")) $("outFooterLeft").textContent = footerText || "THINKLIMITLESS © 2026";
 }
 
-function generateQR() {
+function generateQR(invoiceNumber = DEFAULT_INVOICE) {
     const qrContainer = $("qr");
     if (!qrContainer) {
         console.error("QR container not found.");
@@ -492,7 +510,7 @@ function generateQR() {
     }
 
     new QRCode(qrContainer, {
-        text: "https://www.thinklimitless.co/",
+        text: THINKLIMITLESS_URL + "?invoice=" + encodeURIComponent(invoiceNumber),
         width: 96,
         height: 96,
         correctLevel: QRCode.CorrectLevel.H
@@ -505,6 +523,7 @@ function updateInvoice() {
     updateProject();
     updatePaymentStatus();
     updateInvoiceDate();
+    updatePaymentPlan();
     updateInvoiceNumber();
     updatePaymentTerms();
     updateBranding();
@@ -917,8 +936,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     console.log("Invoice Builder initialized successfully.");
 });
-
-
 
 
 

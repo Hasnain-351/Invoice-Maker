@@ -300,102 +300,106 @@
     <main class="preview-area">
         <article class="invoice" id="invoice">
             <header class="invoice-header">
-                <div class="header-banner"></div>
-                <img src="header-overlay.1.jpg" class="header-overlay" alt="">
+                <div class="hero-meta">
+                    <span class="hero-label">INVOICE NO</span>
+                    <span class="qr-number" id="qrNumber">INV-TL-2026-001</span>
+                </div>
                 <div class="invoice-title">INVOICE</div>
-                <div class="qr-number" id="qrNumber">INV-TL-2026-001</div>
                 <div class="qr-wrapper">
                     <div id="qr"></div>
                 </div>
             </header>
 
-            <section class="invoice-meta">
-                <div class="meta-column">
-                    <div class="meta-label">BILLED TO</div>
-                    <div class="meta-value" id="outClient">Client Name</div>
-                    <div class="meta-small" id="outAddress">Client address</div>
-                    <div class="payment-status">
-                        <span class="status-label">PAYMENT STATUS</span>
+            <div class="invoice-body">
+                <section class="invoice-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Billed to</div>
+                        <div class="meta-value" id="outClient">Client Name</div>
+                        <div class="meta-small" id="outAddress">Client address</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Project</div>
+                        <div class="meta-value" id="outProject">Project Name</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Issued</div>
+                        <div class="meta-value" id="outDate">17 AUG 2026</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Payment status</div>
                         <span id="outStatus" class="status-value">DUE</span>
                     </div>
-                </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Payment plan</div>
+                        <div class="meta-value" id="outPaymentPlan">Milestone based</div>
+                    </div>
+                </section>
 
-                <div class="meta-column">
-                    <div class="meta-label">PROJECT</div>
-                    <div class="meta-value" id="outProject">Project Name</div>
-                </div>
+                <section class="invoice-deliverables">
+                    <h2>PAYMENT PLAN</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>MILESTONE</th>
+                                <th>DESCRIPTION</th>
+                                <th>STATUS</th>
+                                <th>AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deliverableRows"></tbody>
+                    </table>
+                </section>
 
-                <div class="meta-column issued-column">
-                    <div class="meta-label">ISSUED</div>
-                    <div class="meta-value" id="outDate">17 AUG 2026</div>
-                </div>
-            </section>
+                <section class="commercial-summary">
+                    <div class="summary-left">
+                        <div class="summary-heading">COMMERCIAL SUMMARY</div>
 
-            <section class="invoice-deliverables">
-                <h2>DELIVERABLES</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>DELIVERABLE</th>
-                            <th>DESCRIPTION</th>
-                            <th>QTY</th>
-                            <th>AMOUNT</th>
-                            <th>STATUS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="deliverableRows"></tbody>
-                </table>
-            </section>
+                        <div class="summary-row">
+                            <span>Original project fee</span>
+                            <strong id="outFee">PKR 0</strong>
+                        </div>
 
-            <section class="commercial-summary">
-                <div class="summary-left">
-                    <div class="summary-heading">COMMERCIAL SUMMARY</div>
+                        <div class="summary-row" id="discountRow" hidden>
+                            <span id="discountLabel">0% discount</span>
+                            <strong id="outDiscount">− PKR 0</strong>
+                        </div>
 
-                    <div class="summary-row">
-                        <span>Original project fee</span>
-                        <strong id="outFee">PKR 0</strong>
+                        <div class="summary-row">
+                            <span id="taxLabel">0% tax</span>
+                            <strong id="outTax">+ PKR 0</strong>
+                        </div>
                     </div>
 
-                    <div class="summary-row" id="discountRow" hidden>
-                        <span id="discountLabel">0% discount</span>
-                        <strong id="outDiscount">− PKR 0</strong>
+                    <div class="total-box">
+                        <div class="total-label">BALANCE DUE</div>
+                        <div class="total-amount" id="outTotal">PKR 0</div>
+                    </div>
+                </section>
+
+                <footer class="invoice-footer">
+                    <div class="footer-column">
+                        <div class="footer-label">Payment terms</div>
+                        <div class="footer-value" id="outTerms">100% due on invoice</div>
                     </div>
 
-                    <div class="summary-row">
-                        <span id="taxLabel">0% tax</span>
-                        <strong id="outTax">+ PKR 0</strong>
+                    <div class="footer-column">
+                        <div class="footer-label">Project details</div>
+                        <div class="footer-value" id="outFooterProject">Project</div>
                     </div>
-                </div>
 
-                <div class="total-box">
-                    <div class="total-label">TOTAL DUE</div>
-                    <div class="total-amount" id="outTotal">PKR 0</div>
-                </div>
-            </section>
-
-            <footer class="invoice-footer">
-                <div class="footer-column">
-                    <div class="footer-label">PAYMENT TERMS</div>
-                    <div class="footer-value" id="outTerms">100% due on invoice</div>
-                </div>
-
-                <div class="footer-column">
-                    <div class="footer-label">PROJECT</div>
-                    <div class="footer-value" id="outFooterProject">Project</div>
-                </div>
-
-                <div class="footer-column footer-brand-column">
-                    <div class="footer-brand">
-                        <span id="outBrandName">THINKLIMITLESS</span>
-                        <img id="outBrandLogo" class="footer-logo" alt="Brand logo" src="">
+                    <div class="footer-column footer-brand-column">
+                        <div class="footer-brand">
+                            <span id="outBrandName">THINKLIMITLESS</span>
+                            <img id="outBrandLogo" class="footer-logo" alt="Brand logo" src="">
+                        </div>
+                        <div class="footer-value" id="outBrandTagline">AI · MEDIA · CREATIVITY</div>
                     </div>
-                    <div class="footer-value" id="outBrandTagline">AI · MEDIA · CREATIVITY</div>
-                </div>
-            </footer>
+                </footer>
 
-            <div class="bottom-footer">
-                <span id="outFooterLeft">THINKLIMITLESS © 2026</span>
-                <span id="footerRight">CLIENT · PROJECT</span>
+                <div class="bottom-footer">
+                    <span id="outFooterLeft">THINKLIMITLESS © 2026</span>
+                    <span id="footerRight">CLIENT · PROJECT</span>
+                </div>
             </div>
         </article>
     </main>
