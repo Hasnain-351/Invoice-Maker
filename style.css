@@ -131,6 +131,45 @@ body {
     font: inherit;
 }
 
+.password-input-wrap {
+    position: relative;
+}
+
+.password-input-wrap input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    padding: 0;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #62666b;
+    cursor: pointer;
+}
+
+.password-toggle-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+}
+
+.password-toggle[aria-pressed="true"] .password-toggle-slash {
+    display: none;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 2px;
+}
+
 
 .auth-field input:focus {
     outline: 2px solid #111;
@@ -543,6 +582,10 @@ body {
     border-color:
         #111;
 
+}
+
+.admin-restricted [data-admin-only="true"] {
+    pointer-events: none;
 }
 
 
@@ -2215,4 +2258,3 @@ body {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
-
