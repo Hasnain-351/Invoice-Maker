@@ -88,14 +88,20 @@ function updateRoleAccess() {
     const tax = $("tax");
     const fee = $("fee");
     const addDeliverable = $("addDeliverable");
+    const markAdminOnly = function (field) {
+        if (!field) return;
 
-    if (paymentStatus) paymentStatus.disabled = !isAdmin;
-    if (hasDiscount) hasDiscount.disabled = !isAdmin;
-    if (discount) discount.disabled = !isAdmin;
-    if (discountType) discountType.disabled = !isAdmin;
-    if (hasTax) hasTax.disabled = !isAdmin;
-    if (tax) tax.disabled = !isAdmin;
-    if (fee) fee.readOnly = !isAdmin;
+        field.dataset.adminOnly = "true";
+        const container = field.closest(".form-field, .deliverable-head");
+        if (container) container.classList.toggle("admin-restricted", !isAdmin);
+        if (field === fee) field.readOnly = !isAdmin;
+        else field.disabled = !isAdmin;
+    };
+
+    [paymentStatus, hasDiscount, discount, discountType, hasTax, tax].forEach(function (field) {
+        markAdminOnly(field);
+    });
+    markAdminOnly(fee);
     if (addDeliverable) addDeliverable.disabled = false;
 
     document.querySelectorAll(".deliverable-editor input[type='number']").forEach(function (input) {
@@ -106,18 +112,18 @@ function updateRoleAccess() {
         const isAmountField = numbers.length > 1 && input === numbers[1];
 
         if (isAmountField) {
-            input.disabled = !isAdmin;
+            markAdminOnly(input);
         } else {
             input.disabled = false;
         }
     });
 
     document.querySelectorAll(".deliverable-editor select").forEach(function (select) {
-        select.disabled = !isAdmin;
+        markAdminOnly(select);
     });
 
     document.querySelectorAll(".remove-deliverable").forEach(function (button) {
-        button.disabled = !isAdmin;
+        markAdminOnly(button);
     });
 }
 
@@ -289,6 +295,7 @@ function renderDeliverableEditors() {
     }).join("");
 
     renderDeliverableTable();
+    updateRoleAccess();
 }
 
 function updateDeliverable(index, property, value) {
@@ -880,6 +887,16 @@ function printInvoice() {
 }
 
 function setupEventListeners() {
+    const sidebar = document.querySelector(".sidebar");
+    if (sidebar) {
+        sidebar.addEventListener("click", function (event) {
+            if (localStorage.getItem(AUTH_ROLE_KEY) !== "employee") return;
+            if (event.target.closest(".admin-restricted")) {
+                alert("Only Admin Can Make Changes to This Section");
+            }
+        });
+    }
+
     const liveFields = [
         "currency",
         "invoiceNo",
