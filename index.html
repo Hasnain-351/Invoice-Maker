@@ -63,13 +63,37 @@
             <label for="loginPassword">
                 Password
             </label>
-            <input
-                type="password"
-                id="loginPassword"
-                name="password"
-                autocomplete="current-password"
-                placeholder="Enter password"
-            >
+            <div class="password-input-wrap">
+                <input
+                    type="password"
+                    id="loginPassword"
+                    name="password"
+                    autocomplete="current-password"
+                    placeholder="Enter password"
+                >
+                <button
+                    type="button"
+                    id="toggleLoginPassword"
+                    class="password-toggle"
+                    aria-label="Show password"
+                    aria-pressed="false"
+                >
+                    <svg
+                        class="password-toggle-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path class="password-toggle-slash" d="M3 21 21 3"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <button
