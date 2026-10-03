@@ -1,0 +1,70 @@
+/* Invoice enhancements: larger footer logo, payment breakdown, and editable footer project name. */
+.footer-logo {
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.footer-brand-column .footer-brand {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.invoice-footer .footer-column:first-child .footer-label {
+    color: #858585;
+    font-weight: 500;
+}
+
+.invoice-footer .footer-column:first-child .footer-value {
+    color: #777d84;
+    font-weight: 400;
+}
+
+.payment-breakdown {
+    display: grid;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.payment-breakdown .summary-row {
+    margin: 0;
+}
+
+.secondary-summary-row {
+    color: rgba(26, 26, 26, 0.62);
+}
+
+.secondary-summary-row strong {
+    color: rgba(26, 26, 26, 0.72);
+    font-weight: 500;
+}
+
+.enhancement-note {
+    margin-top: 5px;
+    color: #777;
+    font-size: 8px;
+    line-height: 1.35;
+}
+
+@media (max-width: 600px) {
+    .footer-brand-column .footer-brand {
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .footer-logo {
+        width: 22px !important;
+        height: 22px !important;
+    }
+}
+
+@media print {
+    .footer-logo {
+        width: 28px !important;
+        height: 28px !important;
+    }
+}
