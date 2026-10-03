@@ -116,6 +116,7 @@
         const emailField = passwordField.cloneNode(true);
         const label = emailField.querySelector("label");
         const input = emailField.querySelector("input");
+        emailField.querySelector(".password-toggle")?.remove();
 
         label.textContent = "Email";
         label.htmlFor = "loginEmail";
@@ -152,6 +153,16 @@
         window.__invoiceAuthClient = client;
 
         byId("loginBtn")?.addEventListener("click", handleLogin, true);
+        byId("toggleLoginPassword")?.addEventListener("click", function () {
+            const passwordField = byId("loginPassword");
+            const toggleButton = byId("toggleLoginPassword");
+            if (!passwordField || !toggleButton) return;
+
+            const shouldShowPassword = passwordField.type === "password";
+            passwordField.type = shouldShowPassword ? "text" : "password";
+            toggleButton.setAttribute("aria-label", shouldShowPassword ? "Hide password" : "Show password");
+            toggleButton.setAttribute("aria-pressed", String(shouldShowPassword));
+        });
         byId("loginPassword")?.addEventListener("keydown", function (event) {
             if (event.key === "Enter") handleLogin(event);
         });
