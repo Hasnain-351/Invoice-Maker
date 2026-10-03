@@ -1,443 +1,1077 @@
-<!DOCTYPE html>
-<html lang="en">
+/* =========================================================
+   INVOICE BUILDER
+   Live Editing + Calculations + QR + Supabase Auth
+========================================================= */
 
-<head>
+const SUPABASE_URL = "https://jilmmclikggptpnsibvy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_HETZ_jyUbECuyDqOBDdPyg_WYQZr5OE";
 
-    <meta charset="UTF-8">
+let supabaseClient = null;
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+try {
+    if (window.supabase?.createClient) {
+        supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            }
+        );
+        window.__invoiceAuthClient = supabaseClient;
+    }
+} catch (error) {
+    console.error("Supabase initialization failed:", error);
+}
 
-    <title>Invoice Builder</title>
+const THINKLIMITLESS_URL = "https://www.thinklimitless.co/";
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
+let deliverables = [];
+let brandLogoData = "";
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+const AUTH_ROLE_KEY = "invoice_dashboard_role";
 
-    <link
-        rel="stylesheet"
-        href="invoice-enhancements.css"
-    >
+let currentRole = localStorage.getItem(AUTH_ROLE_KEY) || null;
 
-    <link
-        rel="stylesheet"
-        href="header-overlay.css"
-    >
+function $(id) {
+    return document.getElementById(id);
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-</head>
+function showLoginScreen() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
 
-<body>
+    if (authScreen) authScreen.classList.remove("hidden");
+    if (landingScreen) landingScreen.classList.add("hidden");
+    if (app) app.classList.add("hidden");
+}
 
-<div id="authScreen" class="auth-screen">
+function showLandingScreen() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
 
-    <div class="auth-card">
+    if (authScreen) authScreen.classList.add("hidden");
+    if (landingScreen) landingScreen.classList.remove("hidden");
+    if (app) app.classList.add("hidden");
+}
 
-        <div class="auth-title">
-            LOGIN
-        </div>
+function showDashboard() {
+    const authScreen = $("authScreen");
+    const landingScreen = $("landingScreen");
+    const app = $("app");
 
-        <div class="auth-field">
-            <label for="loginEmail">
-                Email
-            </label>
-            <input
-                type="email"
-                id="loginEmail"
-                name="email"
-                autocomplete="username"
-                placeholder="Enter your email"
-            >
-        </div>
+    if (authScreen) authScreen.classList.add("hidden");
+    if (landingScreen) landingScreen.classList.add("hidden");
+    if (app) app.classList.remove("hidden");
+}
 
-        <div class="auth-field">
-            <label for="loginPassword">
-                Password
-            </label>
-            <input
-                type="password"
-                id="loginPassword"
-                name="password"
-                autocomplete="current-password"
-                placeholder="Enter password"
-            >
-        </div>
+function updateRoleAccess() {
+    const role = localStorage.getItem(AUTH_ROLE_KEY);
 
-        <button
-            type="button"
-            id="loginBtn"
-            class="login-button"
-        >
-            LOGIN
-        </button>
+    if (!role) {
+        showLoginScreen();
+        return;
+    }
 
-        <div id="loginError" class="login-error" aria-live="polite"></div>
+    const isAdmin = role === "admin";
 
-    </div>
+    const paymentStatus = $("paymentStatus");
+    const hasDiscount = $("hasDiscount");
+    const discount = $("discount");
+    const discountType = $("discountType");
+    const hasTax = $("hasTax");
+    const tax = $("tax");
+    const fee = $("fee");
+    const addDeliverable = $("addDeliverable");
 
-</div>
+    if (paymentStatus) paymentStatus.disabled = !isAdmin;
+    if (hasDiscount) hasDiscount.disabled = !isAdmin;
+    if (discount) discount.disabled = !isAdmin;
+    if (discountType) discountType.disabled = !isAdmin;
+    if (hasTax) hasTax.disabled = !isAdmin;
+    if (tax) tax.disabled = !isAdmin;
+    if (fee) fee.readOnly = !isAdmin;
+    if (addDeliverable) addDeliverable.disabled = false;
 
-<div id="landingScreen" class="landing-screen hidden">
+    document.querySelectorAll(".deliverable-editor input[type='number']").forEach(function (input) {
+        const parent = input.closest(".two-columns");
+        if (!parent) return;
 
-    <div class="landing-card">
+        const numbers = parent.querySelectorAll("input[type='number']");
+        const isAmountField = numbers.length > 1 && input === numbers[1];
 
-        <div class="landing-header">
+        if (isAmountField) {
+            input.disabled = !isAdmin;
+        } else {
+            input.disabled = false;
+        }
+    });
 
-            <div class="landing-title">
-                INVOICE ACTIONS
-            </div>
+    document.querySelectorAll(".deliverable-editor select").forEach(function (select) {
+        select.disabled = !isAdmin;
+    });
 
-            <button
-                type="button"
-                id="landingLogoutBtn"
-                class="landing-logout-button"
-            >
-                LOGOUT
-            </button>
+    document.querySelectorAll(".remove-deliverable").forEach(function (button) {
+        button.disabled = !isAdmin;
+    });
+}
 
-        </div>
+function setupAuth() {
+    const storedRole = localStorage.getItem(AUTH_ROLE_KEY);
+    if (storedRole) {
+        currentRole = storedRole;
+        showLandingScreen();
+        updateRoleAccess();
+        return;
+    }
 
-        <div class="landing-actions">
+    currentRole = null;
+    showLoginScreen();
+}
 
-            <button
-                type="button"
-                id="newInvoiceBtn"
-                class="landing-button primary"
-            >
-                NEW INVOICE
-            </button>
+function applySavedInvoice(invoice) {
+    if (!invoice) return;
 
-            <div class="landing-open">
+    const assign = function (id, value) {
+        const field = $(id);
+        if (!field) return;
+        if (field.type === "checkbox") {
+            field.checked = Boolean(value);
+            return;
+        }
+        field.value = value ?? "";
+    };
 
-                <input
-                    type="text"
-                    id="openInvoiceNumber"
-                    placeholder="Enter invoice number"
-                >
+    assign("invoiceNo", invoice.invoice_number || "");
+    assign("invoiceDate", invoice.invoice_date || "");
+    assign("dueDate", invoice.due_date || "");
+    assign("brandName", invoice.company_name || "");
+    assign("client", invoice.client_name || "");
+    assign("clientDescription", invoice.client_description || invoice.client_note || "");
+    assign("address", invoice.client_address || "");
+    assign("projectDescription", invoice.project_description || "");
+    assign("terms", invoice.payment_terms || "");
+    assign("paymentStatus", invoice.payment_status || "");
+    assign("tax", invoice.tax ?? "");
+    assign("hasTax", Number(invoice.tax) > 0);
+    assign("project", invoice.project || "");
+    assign("footerProject", invoice.project || "");
+    assign("footerLeft", invoice.footer_text || "");
+    assign("brandTagline", invoice.brand_tagline || "");
+    assign("currency", invoice.currency || "");
+    const savedDiscount = Number(invoice.discount) || 0;
+    assign("hasDiscount", savedDiscount > 0);
+    assign("discount", savedDiscount || "");
+    assign("discountType", savedDiscount > 0 ? "amount" : "");
 
-                <button
-                    type="button"
-                    id="openInvoiceBtn"
-                    class="landing-button"
-                >
-                    OPEN INVOICE
-                </button>
+    const storedDeliverables = Array.isArray(invoice.items) ? invoice.items : [];
+    deliverables = storedDeliverables.map(function (item) {
+        const savedStatus = String(item.status || "").toUpperCase();
+        return {
+            name: item.name || "",
+            description: item.description || "",
+            qty: item.qty ?? "",
+            amount: item.amount ?? "",
+            status: ["PAID", "PENDING"].includes(savedStatus) ? savedStatus : (savedStatus ? "DUE" : ""),
+            paid_amount: item.paid_amount ?? ""
+        };
+    });
 
-            </div>
+    renderDeliverableEditors();
+    updateInvoice();
+}
 
-        </div>
+function formatMoney(value) {
+    return new Intl.NumberFormat("en-US", {
+        maximumFractionDigits: 2
+    }).format(Number(value) || 0);
+}
 
-        <div id="landingError" class="landing-error" aria-live="polite"></div>
+function formatDate(value) {
+    if (!value) return "";
 
-    </div>
+    const date = new Date(value + "T00:00:00");
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    }).toUpperCase();
+}
 
-</div>
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, function (character) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        }[character];
+    });
+}
 
-<div id="app" class="app hidden">
+function getCurrency() {
+    return $("currency")?.value || "";
+}
 
-    <aside class="sidebar">
+function formatCurrency(value) {
+    const currency = getCurrency();
+    return (currency ? currency + " " : "") + formatMoney(value);
+}
 
-        <div class="sidebar-header">
+function renderDeliverableEditors() {
+    const container = $("deliverableEditors");
+    if (!container) return;
 
-            <div class="brand">
-                INVOICE BUILDER
-            </div>
+    const invoiceStatus = $("paymentStatus")?.value || "";
+    const invoiceOverridesLines = invoiceStatus === "PAID" || invoiceStatus === "PENDING";
+    const paymentBreakdown = calculatePaymentBreakdown(calculateTotals());
 
-            <button
-                type="button"
-                id="logoutBtn"
-                class="logout-button"
-            >
-                LOGOUT
-            </button>
+    container.innerHTML = deliverables.map(function (item, index) {
+        const showPaidDueFields = !invoiceOverridesLines && item.status === "DUE";
+        const linePayment = paymentBreakdown[index];
+        return `
+            <div class="deliverable-editor">
+                <div class="deliverable-head">
+                    <span class="deliverable-number">MILESTONE ${String(index + 1).padStart(2, "0")}</span>
+                    <button type="button" class="remove-deliverable" onclick="removeDeliverable(${index})">×</button>
+                </div>
 
-        </div>
-
-        <section class="form-section">
-            <div class="section-title">DOCUMENT</div>
-            <div class="two-columns">
                 <div class="form-field">
-                    <label>Currency</label>
-                    <select id="currency">
-                        <option value="" selected></option>
-                        <option value="PKR">PKR</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
+                    <label>Milestone</label>
+                    <input type="text" value="${escapeHTML(item.name)}" oninput="updateDeliverable(${index}, 'name', this.value)">
+                </div>
+
+                <div class="form-field">
+                    <label>Description</label>
+                    <input type="text" value="${escapeHTML(item.description)}" oninput="updateDeliverable(${index}, 'description', this.value)">
+                </div>
+
+                <div class="two-columns">
+                    <div class="form-field">
+                        <label>Qty</label>
+                        <input type="number" min="0" value="${escapeHTML(item.qty ?? "")}" oninput="updateDeliverable(${index}, 'qty', this.value)">
+                    </div>
+
+                    <div class="form-field">
+                        <label>Amount</label>
+                        <input type="number" min="0" value="${escapeHTML(item.amount ?? "")}" oninput="updateDeliverable(${index}, 'amount', this.value)">
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Payment Status</label>
+                    <select onchange="updateDeliverable(${index}, 'status', this.value)" ${invoiceOverridesLines ? "disabled" : ""}>
+                        <option value="" ${!item.status ? "selected" : ""}></option>
+                        <option value="DUE" ${item.status === "DUE" ? "selected" : ""}>Due</option>
+                        <option value="PENDING" ${item.status === "PENDING" ? "selected" : ""}>Pending</option>
+                        <option value="PAID" ${item.status === "PAID" ? "selected" : ""}>Paid</option>
                     </select>
                 </div>
 
-                <div class="form-field">
-                    <label>Invoice Number</label>
-                    <input type="text" id="invoiceNo">
-                </div>
-
-                <div class="form-field">
-                    <label>Invoice Date</label>
-                    <input type="date" id="invoiceDate">
-                </div>
-
-                <div class="form-field">
-                    <label>Due Date</label>
-                    <input type="date" id="dueDate">
-                </div>
-            </div>
-        </section>
-
-        <section class="form-section">
-            <div class="section-title">CLIENT</div>
-
-            <div class="form-field">
-                <label>Billed To</label>
-                <input type="text" id="client">
-            </div>
-
-            <div class="form-field">
-                <label>Client Description</label>
-                <textarea id="clientDescription" class="soft-textarea" rows="2"></textarea>
-            </div>
-
-            <div class="form-field">
-                <label>Client Address</label>
-                <input type="text" id="address">
-            </div>
-
-            <div class="form-field">
-                <label>Project</label>
-                <input type="text" id="project">
-            </div>
-
-            <div class="form-field">
-                <label>Project Description</label>
-                <textarea id="projectDescription" class="soft-textarea" rows="2"></textarea>
-            </div>
-
-            <div class="form-field">
-                <label>Payment Status</label>
-                <select id="paymentStatus">
-                    <option value="" selected></option>
-                    <option value="DUE">DUE</option>
-                    <option value="PAID">PAID</option>
-                    <option value="PENDING">PENDING</option>
-                </select>
-            </div>
-        </section>
-
-        <section class="form-section">
-            <div class="section-title">PAYMENT PLAN</div>
-            <div id="deliverableEditors" class="deliverable-editors"></div>
-            <button type="button" id="addDeliverable" class="add-deliverable">+ ADD MILESTONE</button>
-        </section>
-
-        <section class="form-section">
-            <div class="section-title">COMMERCIAL</div>
-
-            <div class="form-field">
-                <label>Original Project Fee</label>
-                <input type="number" id="fee" min="0" value="0" readonly>
-            </div>
-
-            <div class="form-field checkbox-field">
-                <label class="toggle-label">
-                    <input type="checkbox" id="hasDiscount">
-                    <span>Approve discount</span>
-                </label>
-            </div>
-
-            <div id="discountBlock" class="discount-block" hidden>
-                <div class="two-columns">
+                <div class="two-columns payment-split" ${showPaidDueFields ? "" : "hidden"}>
                     <div class="form-field">
-                        <label>Discount Type</label>
-                        <select id="discountType">
-                            <option value="" selected></option>
-                            <option value="percent">Percent</option>
-                            <option value="amount">Amount</option>
-                        </select>
+                        <label>Amount Paid</label>
+                        <input type="number" id="deliverablePaid${index}" min="0" max="${linePayment?.totalAmount || 0}" step="0.01" value="${escapeHTML(item.paid_amount ?? "")}" oninput="updateDeliverable(${index}, 'paid_amount', this.value)">
                     </div>
-
                     <div class="form-field">
-                        <label id="discountInputLabel">Discount %</label>
-                        <input type="number" id="discount" min="0" max="100" step="0.01">
+                        <label>Amount Due</label>
+                        <input type="text" id="deliverableDue${index}" value="${formatMoney(linePayment?.dueAmount || 0)}" readonly>
                     </div>
                 </div>
             </div>
+        `;
+    }).join("");
 
-            <div class="form-field checkbox-field">
-                <label class="toggle-label">
-                    <input type="checkbox" id="hasTax">
-                    <span>Add tax</span>
-                </label>
-            </div>
+    renderDeliverableTable();
+}
 
-            <div id="taxBlock" class="discount-block" hidden>
-                <div class="form-field">
-                    <label>Tax %</label>
-                    <input type="number" id="tax" min="0" step="0.01">
-                </div>
-            </div>
+function updateDeliverable(index, property, value) {
+    if (!deliverables[index]) return;
 
-            <div class="form-field">
-                <label>Payment Terms</label>
-                <input type="text" id="terms">
-            </div>
-        </section>
+    if (property === "qty" || property === "amount") {
+        deliverables[index][property] = value === "" ? "" : Number(value) || 0;
+    } else if (property === "paid_amount") {
+        deliverables[index].paid_amount = value === "" ? "" : Math.max(Number(value) || 0, 0);
+    } else {
+        deliverables[index][property] = value;
+    }
 
-        <section class="form-section">
-            <div class="section-title">FOOTER</div>
+    if (property === "status") renderDeliverableEditors();
 
-            <div class="form-field">
-                <label>Footer Left Text</label>
-                <input type="text" id="footerLeft">
-            </div>
+    let linePayment = calculatePaymentBreakdown(calculateTotals())[index];
+    if (Number(deliverables[index].paid_amount) > linePayment.totalAmount) {
+        deliverables[index].paid_amount = linePayment.totalAmount;
+    }
 
-            <div class="form-field">
-                <label>Footer Project</label>
-                <input type="text" id="footerProject">
-            </div>
+    const paidField = $("deliverablePaid" + index);
+    const dueField = $("deliverableDue" + index);
+    if (paidField) {
+        paidField.max = linePayment.totalAmount;
+        if (Number(paidField.value) > linePayment.totalAmount) {
+            paidField.value = linePayment.totalAmount;
+        }
+    }
 
-            <div class="form-field">
-                <label>Brand Name</label>
-                <input type="text" id="brandName">
-            </div>
+    linePayment = calculatePaymentBreakdown(calculateTotals())[index];
+    if (dueField) dueField.value = formatMoney(linePayment.dueAmount);
 
-            <div class="form-field">
-                <label>Brand Tagline</label>
-                <input type="text" id="brandTagline">
-            </div>
+    renderDeliverableTable();
+    updateInvoice();
+}
 
-            <div class="form-field">
-                <label>Brand Logo</label>
-                <input type="file" id="brandLogo" accept="image/*">
-            </div>
-        </section>
+function addDeliverable() {
+    deliverables.push({
+        name: "",
+        description: "",
+        qty: "",
+        amount: "",
+        status: "",
+        paid_amount: ""
+    });
 
-        <div class="actions">
-            <button type="button" id="clearBtn" class="clear-button">CLEAR</button>
-            <button type="button" id="saveBtn" class="save-button">SAVE</button>
-            <button type="button" id="printBtn" class="print-button">PRINT / PDF</button>
-        </div>
+    renderDeliverableEditors();
+    updateInvoice();
+}
 
-    </aside>
+function removeDeliverable(index) {
+    if (!deliverables[index]) return;
 
-    <main class="preview-area">
-        <article class="invoice" id="invoice">
-            <header class="invoice-header">
-                <div class="hero-meta">
-                    <span class="hero-label">INVOICE NO</span>
-                    <span class="qr-number" id="qrNumber"></span>
-                </div>
-                <div class="invoice-title">INVOICE</div>
-                <div class="qr-wrapper">
-                    <div id="qr"></div>
-                </div>
-            </header>
+    deliverables.splice(index, 1);
+    renderDeliverableEditors();
+    updateInvoice();
+}
 
-            <div class="invoice-body">
-                <section class="invoice-meta">
-                    <div class="meta-item">
-                        <div class="meta-label">Billed to</div>
-                        <div class="meta-value" id="outClient"></div>
-                        <div class="meta-small project-description-output" id="outClientDescription"></div>
-                        <div class="meta-small" id="outAddress"></div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Project</div>
-                        <div class="meta-value" id="outProject"></div>
-                        <div class="meta-small project-description-output" id="outProjectDescription"></div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Issued</div>
-                        <div class="meta-value" id="outDate"></div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Payment status</div>
-                        <span id="outStatus" class="status-value"></span>
-                    </div>
-                </section>
+function renderDeliverableTable() {
+    const table = $("deliverableRows");
+    if (!table) return;
 
-                <section class="invoice-deliverables">
-                    <h2>PAYMENT PLAN</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>MILESTONE</th>
-                                <th>DESCRIPTION</th>
-                                <th>STATUS</th>
-                                <th>AMOUNT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="deliverableRows"></tbody>
-                    </table>
-                </section>
+    const paymentBreakdown = calculatePaymentBreakdown(calculateTotals());
 
-                <section class="commercial-summary">
-                    <div class="summary-left">
-                        <div class="summary-heading">COMMERCIAL SUMMARY</div>
+    table.innerHTML = deliverables.map(function (item, index) {
+        const description = item.description || item.name || "";
+        const payment = paymentBreakdown[index];
+        const quantity = Number(item.qty);
+        const showQty = item.qty !== "" && Number.isFinite(quantity) && quantity > 1;
+        const hasAmount = item.qty !== "" && item.amount !== "";
+        const amount = payment.status === "PAID" ? payment.paidAmount : payment.dueAmount;
+        return `
+            <tr>
+                <td><span class="deliverable-name">${escapeHTML(item.name || "")}</span></td>
+                <td>${escapeHTML(description)}${showQty ? ` <span class="meta-small">x${item.qty}</span>` : ""}</td>
+                <td><span class="deliverable-status ${payment.status.toLowerCase()}">${payment.status}</span></td>
+                <td>${hasAmount ? formatCurrency(amount) : ""}</td>
+            </tr>
+        `;
+    }).join("");
+}
 
-                        <div class="summary-row secondary-summary-row">
-                            <span>Original project fee</span>
-                            <strong id="outFee">PKR 0</strong>
-                        </div>
+function calculateTotals() {
+    const subtotal = deliverables.reduce(function (total, item) {
+        return total + ((Number(item.qty) || 0) * (Number(item.amount) || 0));
+    }, 0);
 
-                        <div class="summary-row" id="discountRow" hidden>
-                            <span id="discountLabel">Approved discount</span>
-                            <strong id="outDiscount">− PKR 0</strong>
-                        </div>
+    let discount = 0;
 
-                        <div class="summary-row" id="taxRow" hidden>
-                            <span id="taxLabel">0% tax</span>
-                            <strong id="outTax">+ PKR 0</strong>
-                        </div>
+    const hasDiscount = $("hasDiscount")?.checked || false;
 
-                    </div>
+    if (hasDiscount) {
+        const discountValue = Number($("discount")?.value) || 0;
+        const discountType = $("discountType")?.value || "percent";
 
-                    <div class="total-box">
-                        <div class="total-label" id="outTotalLabel">TOTAL DUE</div>
-                        <div class="total-amount" id="outTotal">PKR 0</div>
-                    </div>
-                </section>
+        if (discountType === "percent") {
+            discount = subtotal * (discountValue / 100);
+        } else {
+            discount = discountValue;
+        }
 
-                <footer class="invoice-footer">
-                    <div class="footer-column">
-                        <div class="footer-label">Payment terms</div>
-                        <div class="footer-value" id="outTerms"></div>
-                    </div>
+        discount = Math.min(discount, subtotal);
+    }
 
-                    <div class="footer-column">
-                        <div class="footer-label">Project</div>
-                        <div class="footer-value" id="outFooterProject"></div>
-                    </div>
+    const tax = $("hasTax")?.checked ? Number($("tax")?.value) || 0 : 0;
+    discount = roundMoney(discount);
+    const afterDiscount = Math.max(subtotal - discount, 0);
+    const taxAmount = roundMoney(afterDiscount * (tax / 100));
+    const total = roundMoney(afterDiscount + taxAmount);
 
-                    <div class="footer-column footer-brand-column">
-                        <div class="footer-brand">
-                            <span id="outBrandName"></span>
-                            <img id="outBrandLogo" class="footer-logo" alt="Brand logo" src="">
-                        </div>
-                        <div class="footer-value" id="outBrandTagline"></div>
-                    </div>
-                </footer>
+    return { subtotal, discount, tax, taxAmount, total };
+}
 
-                <div class="bottom-footer">
-                    <span id="outFooterLeft"></span>
-                    <span id="footerRight">CLIENT · PROJECT</span>
-                </div>
-            </div>
-        </article>
-    </main>
+function roundMoney(value) {
+    return Math.round(((Number(value) || 0) + Number.EPSILON) * 100) / 100;
+}
 
-</div>
+function calculatePaymentBreakdown(totals) {
+    const invoiceStatus = $("paymentStatus")?.value || "";
+    const targetCents = Math.round(totals.total * 100);
+    const lineTotals = deliverables.map(function (item) {
+        return (Number(item.qty) || 0) * (Number(item.amount) || 0);
+    });
+    const lastBillableIndex = lineTotals.reduce(function (lastIndex, amount, index) {
+        return amount > 0 ? index : lastIndex;
+    }, -1);
+    let allocatedCents = 0;
 
-<script src="supabase-auth.js"></script>
-<script src="script.js"></script>
+    return deliverables.map(function (item, index) {
+        const grossAmount = lineTotals[index];
+        let totalCents = 0;
 
-</body>
-</html>
+        if (grossAmount > 0 && totals.subtotal > 0) {
+            if (index === lastBillableIndex) {
+                totalCents = targetCents - allocatedCents;
+            } else {
+                totalCents = Math.floor((grossAmount / totals.subtotal) * targetCents + 1e-8);
+                allocatedCents += totalCents;
+            }
+        }
+
+        const totalAmount = totalCents / 100;
+        const savedStatus = String(item.status || "").toUpperCase();
+        const lineStatus = ["PAID", "PENDING"].includes(savedStatus) ? savedStatus : "DUE";
+        const status = invoiceStatus === "PAID"
+            ? "PAID"
+            : invoiceStatus === "PENDING"
+                ? "PENDING"
+                : lineStatus;
+        const paidAmount = status === "PAID"
+            ? totalAmount
+            : status === "PENDING"
+                ? 0
+                : Math.min(Math.max(Number(item.paid_amount) || 0, 0), totalAmount);
+
+        return {
+            status,
+            totalAmount,
+            paidAmount,
+            dueAmount: roundMoney(totalAmount - paidAmount)
+        };
+    });
+}
+
+function updateCommercial() {
+    const totals = calculateTotals();
+    const discountApproved = $("hasDiscount")?.checked || false;
+    const hasApprovedDiscount = discountApproved && totals.discount > 0;
+    let payments = calculatePaymentBreakdown(totals);
+    const invoiceStatus = $("paymentStatus")?.value || "";
+    const invoiceOverridesLines = invoiceStatus === "PAID" || invoiceStatus === "PENDING";
+
+    if (!invoiceOverridesLines) {
+        payments.forEach(function (payment, index) {
+            if (Number(deliverables[index].paid_amount) > payment.totalAmount) {
+                deliverables[index].paid_amount = payment.totalAmount;
+            }
+        });
+        payments = calculatePaymentBreakdown(totals);
+    }
+
+    payments.forEach(function (payment, index) {
+        const paidField = $("deliverablePaid" + index);
+        const dueField = $("deliverableDue" + index);
+        if (paidField) {
+            paidField.max = payment.totalAmount;
+            if (Number(paidField.value) > payment.totalAmount) {
+                paidField.value = payment.totalAmount;
+            }
+        }
+        if (dueField) dueField.value = formatMoney(payment.dueAmount);
+    });
+
+    const paidAmount = payments.reduce(function (sum, item) {
+        return sum + item.paidAmount;
+    }, 0);
+    const dueAmount = payments.reduce(function (sum, item) {
+        return sum + item.dueAmount;
+    }, 0);
+    const invoiceIsPaid = invoiceStatus === "PAID";
+
+    if ($("fee")) $("fee").value = totals.subtotal;
+    if ($("outFee")) $("outFee").textContent = formatCurrency(totals.subtotal);
+
+    if ($("discountRow")) $("discountRow").hidden = !hasApprovedDiscount;
+
+    if ($("discountLabel")) {
+        $("discountLabel").textContent = "Approved discount";
+    }
+
+    if ($("outDiscount")) {
+        $("outDiscount").textContent = hasApprovedDiscount ? "− " + formatCurrency(totals.discount) : "";
+    }
+
+    if ($("taxLabel")) $("taxLabel").textContent = (totals.tax || 0) + "% tax";
+    if ($("outTax")) $("outTax").textContent = "+ " + formatCurrency(totals.taxAmount);
+    if ($("taxRow")) $("taxRow").hidden = !(totals.tax > 0 && totals.taxAmount > 0);
+
+    if ($("outTotalLabel")) {
+        $("outTotalLabel").textContent = invoiceIsPaid
+            ? "TOTAL PAID"
+            : dueAmount > 0
+                ? "BALANCE DUE"
+                : "TOTAL DUE";
+    }
+    if ($("outTotal")) $("outTotal").textContent = formatCurrency(invoiceIsPaid ? paidAmount : dueAmount);
+}
+
+function updateDiscountUI() {
+    const enabled = $("hasDiscount")?.checked || false;
+
+    if ($("discountBlock")) $("discountBlock").hidden = !enabled;
+
+    const type = $("discountType")?.value || "percent";
+
+    if ($("discountInputLabel")) {
+        $("discountInputLabel").textContent = type === "percent" ? "Discount %" : "Discount Amount";
+    }
+
+    if ($("discount")) {
+        if (type === "percent") {
+            $("discount").max = "100";
+        } else {
+            $("discount").removeAttribute("max");
+        }
+    }
+
+    updateCommercial();
+}
+
+function updateTaxUI() {
+    const enabled = $("hasTax")?.checked || false;
+    if ($("taxBlock")) $("taxBlock").hidden = !enabled;
+}
+
+function updateDiscountAndInvoice() {
+    updateDiscountUI();
+    updateInvoice();
+}
+
+function updateClient() {
+    const client = $("client")?.value.trim();
+    const clientDescription = $("clientDescription")?.value.trim() || "";
+    const address = $("address")?.value.trim();
+
+    if ($("outClient")) $("outClient").textContent = client;
+    if ($("outClientDescription")) $("outClientDescription").textContent = clientDescription;
+    if ($("outAddress")) $("outAddress").textContent = address;
+
+    updateProject();
+}
+
+function updateProject() {
+    const project = $("project")?.value.trim() || "";
+    const projectDescription = $("projectDescription")?.value.trim() || "";
+    const footerProject = $("footerProject")?.value.trim() || "";
+    const client = $("client")?.value.trim() || "";
+
+    if ($("outProject")) $("outProject").textContent = project;
+    if ($("outProjectDescription")) $("outProjectDescription").textContent = projectDescription;
+    if ($("outFooterProject")) $("outFooterProject").textContent = footerProject;
+    if ($("footerRight")) $("footerRight").textContent = [client, project].filter(Boolean).join(" · ").toUpperCase();
+}
+
+function updatePaymentStatus() {
+    const status = $("paymentStatus")?.value || "";
+    const output = $("outStatus");
+    if (!output) return;
+
+    output.textContent = status;
+    output.classList.remove("paid", "pending", "due");
+    if (status) output.classList.add(status.toLowerCase());
+}
+
+function updateInvoiceDate() {
+    if (!$('outDate')) return;
+    $("outDate").textContent = formatDate($("invoiceDate")?.value);
+}
+
+function updateInvoiceNumber() {
+    const invoiceNumber = $("invoiceNo")?.value.trim() || "";
+    if ($("qrNumber")) $("qrNumber").textContent = invoiceNumber;
+}
+
+function updatePaymentTerms() {
+    if (!$('outTerms')) return;
+    $("outTerms").textContent = $("terms")?.value || "";
+}
+
+function updateBranding() {
+    const brandName = $("brandName")?.value.trim() || "";
+    const brandTagline = $("brandTagline")?.value.trim() || "";
+
+    if ($("outBrandName")) $("outBrandName").textContent = brandName;
+    if ($("outBrandTagline")) $("outBrandTagline").textContent = brandTagline;
+
+    const logo = $("outBrandLogo");
+    if (!logo) return;
+
+    if (brandLogoData) {
+        logo.src = brandLogoData;
+        logo.classList.add("has-image");
+    } else {
+        logo.removeAttribute("src");
+        logo.classList.remove("has-image");
+    }
+}
+
+function handleBrandLogo(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function () {
+        brandLogoData = reader.result;
+        updateBranding();
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateFooter() {
+    const footerText = $("footerLeft")?.value.trim();
+    if ($("outFooterLeft")) $("outFooterLeft").textContent = footerText || "";
+}
+
+function generateQR() {
+    const qrContainer = $("qr");
+    if (!qrContainer) {
+        console.error("QR container not found.");
+        return;
+    }
+
+    qrContainer.innerHTML = "";
+    if (typeof QRCode === "undefined") {
+        console.error("QRCode library not loaded.");
+        return;
+    }
+
+    new QRCode(qrContainer, {
+        text: THINKLIMITLESS_URL,
+        width: 96,
+        height: 96,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+}
+
+function updateInvoice() {
+    updateTaxUI();
+    updateDiscountUI();
+    updateClient();
+    updateProject();
+    updatePaymentStatus();
+    updateInvoiceDate();
+    updateInvoiceNumber();
+    updatePaymentTerms();
+    updateBranding();
+    updateFooter();
+    updateCommercial();
+    renderDeliverableTable();
+}
+
+function collectInvoiceData() {
+    const totals = calculateTotals();
+
+    return {
+        invoice_number: $("invoiceNo")?.value.trim() || "",
+        invoice_date: $("invoiceDate")?.value || null,
+        due_date: $("dueDate")?.value || null,
+        company_name: $("brandName")?.value.trim() || "",
+        client_name: $("client")?.value.trim() || "",
+        client_description: $("clientDescription")?.value.trim() || "",
+        client_address: $("address")?.value.trim() || "",
+        project: $("project")?.value.trim() || $("footerProject")?.value.trim() || "",
+        project_description: $("projectDescription")?.value.trim() || "",
+        client_email: "",
+        payment_status: $("paymentStatus")?.value || "",
+        payment_terms: $("terms")?.value.trim() || "",
+        company_email: "",
+        website: THINKLIMITLESS_URL,
+        division: "",
+        discount: totals.discount,
+        tax: totals.tax,
+        subtotal: totals.subtotal,
+        total: totals.total,
+        items: deliverables
+    };
+}
+
+async function saveInvoice() {
+    const client = window.__invoiceAuthClient || supabaseClient;
+
+    if (!client) {
+        alert("Unable to save invoice: database is not configured.");
+        return;
+    }
+
+    try {
+        // 1. Check logged-in user
+        const {
+            data: { user },
+            error: authError
+        } = await client.auth.getUser();
+
+        if (authError || !user) {
+            alert("Your login session is missing or expired. Please log in again.");
+            return;
+        }
+
+        // 2. Check user profile
+        const {
+            data: profile,
+            error: profileError
+        } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (
+            profileError ||
+            !profile ||
+            !["admin", "employee"].includes(profile.role)
+        ) {
+            console.error("PROFILE ERROR:", profileError);
+            alert("Your user profile could not be found. Please contact the administrator.");
+            return;
+        }
+
+        // 3. Collect invoice data
+        const invoice = collectInvoiceData();
+
+        if (!invoice.invoice_number) {
+            alert("Invoice number is missing.");
+            return;
+        }
+
+        const invoiceWithUser = {
+            ...invoice,
+            user_id: user.id
+        };
+
+        console.log("SAVE INVOICE:", invoiceWithUser);
+
+        // 4. Check whether this invoice number already exists
+        const {
+            data: existingInvoices,
+            error: lookupError
+        } = await client
+            .from("invoices")
+            .select("id, invoice_number, user_id, updated_at")
+            .eq("invoice_number", invoice.invoice_number);
+
+        if (lookupError) {
+            console.error("INVOICE LOOKUP ERROR:", lookupError);
+            alert("Could not check whether this invoice already exists.\n\n" + lookupError.message);
+            return;
+        }
+
+        console.log("EXISTING INVOICES:", existingInvoices);
+
+        // 5. If duplicates already exist, STOP instead of creating another one
+        if (existingInvoices.length > 1) {
+            console.error(
+                "DUPLICATE INVOICE NUMBER:",
+                invoice.invoice_number,
+                existingInvoices
+            );
+
+            alert(
+                "This invoice number already exists multiple times in the database.\n\n" +
+                "Invoice: " + invoice.invoice_number + "\n" +
+                "Existing records: " + existingInvoices.length + "\n\n" +
+                "No new invoice was created. Please contact the administrator to resolve the duplicate."
+            );
+
+            return;
+        }
+
+        // 6. No existing invoice → INSERT
+        if (existingInvoices.length === 0) {
+            const { data, error } = await client
+                .from("invoices")
+                .insert([invoiceWithUser])
+                .select()
+                .single();
+
+            if (error) {
+                console.error("INSERT INVOICE ERROR:", error);
+                alert("Could not save invoice.\n\n" + error.message);
+                return;
+            }
+
+            console.log("NEW INVOICE CREATED:", data);
+
+            alert("Invoice saved successfully!");
+            return;
+        }
+
+        // 7. Exactly one existing invoice → UPDATE it
+        const existingInvoice = existingInvoices[0];
+
+        const {
+            data: updatedInvoice,
+            error: updateError
+        } = await client
+            .from("invoices")
+            .update(invoiceWithUser)
+            .eq("id", existingInvoice.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error("UPDATE INVOICE ERROR:", updateError);
+            alert("Could not update invoice.\n\n" + updateError.message);
+            return;
+        }
+
+        console.log("INVOICE UPDATED:", updatedInvoice);
+
+        alert("Invoice updated successfully!");
+
+    } catch (error) {
+        console.error("SAVE INVOICE FAILED:", error);
+        alert("Unable to save invoice.\n\n" + error.message);
+    }
+}
+
+function resetInvoice() {
+    const fields = [
+        "invoiceNo",
+        "invoiceDate",
+        "dueDate",
+        "client",
+        "clientDescription",
+        "address",
+        "projectDescription",
+        "project",
+        "terms",
+        "footerLeft",
+        "footerProject",
+        "brandName",
+        "brandTagline"
+    ];
+
+    fields.forEach(function (id) {
+        const field = $(id);
+        if (field) field.value = "";
+    });
+
+    if ($("currency")) $("currency").value = "";
+    if ($("paymentStatus")) $("paymentStatus").value = "";
+    if ($("hasDiscount")) $("hasDiscount").checked = false;
+    if ($("hasTax")) $("hasTax").checked = false;
+    if ($("discount")) $("discount").value = "";
+    if ($("discountType")) $("discountType").value = "";
+    if ($("tax")) $("tax").value = "";
+    if ($("brandLogo")) $("brandLogo").value = "";
+
+    deliverables = [];
+    brandLogoData = "";
+
+    renderDeliverableEditors();
+    updateDiscountUI();
+    updateInvoice();
+}
+
+function printInvoice() {
+    window.print();
+}
+
+function setupEventListeners() {
+    const liveFields = [
+        "currency",
+        "invoiceNo",
+        "invoiceDate",
+        "dueDate",
+        "client",
+        "clientDescription",
+        "address",
+        "projectDescription",
+        "project",
+        "paymentStatus",
+        "tax",
+        "terms",
+        "footerLeft",
+        "footerProject",
+        "brandName",
+        "brandTagline"
+    ];
+
+    liveFields.forEach(function (id) {
+        const field = $(id);
+        if (!field) return;
+        field.addEventListener("input", updateInvoice);
+        field.addEventListener("change", function () {
+            if (id === "paymentStatus") renderDeliverableEditors();
+            updateInvoice();
+        });
+    });
+
+    if ($("hasDiscount")) $("hasDiscount").addEventListener("change", updateDiscountAndInvoice);
+    if ($("hasTax")) $("hasTax").addEventListener("change", updateInvoice);
+    if ($("discountType")) $("discountType").addEventListener("change", updateDiscountAndInvoice);
+    if ($("discount")) $("discount").addEventListener("input", updateDiscountAndInvoice);
+
+    if ($("addDeliverable")) $("addDeliverable").addEventListener("click", addDeliverable);
+    if ($("brandLogo")) $("brandLogo").addEventListener("change", handleBrandLogo);
+    if ($("clearBtn")) $("clearBtn").addEventListener("click", resetInvoice);
+    if ($("saveBtn")) $("saveBtn").addEventListener("click", saveInvoice);
+    if ($("printBtn")) $("printBtn").addEventListener("click", printInvoice);
+       // Landing page actions
+    const landingScreen = $("landingScreen");
+
+    if (landingScreen) {
+        const landingButtons = landingScreen.querySelectorAll("button");
+
+        landingButtons.forEach(function (button) {
+            const text = button.textContent.trim().toUpperCase();
+
+            if (text.includes("NEW INVOICE")) {
+                button.addEventListener("click", startNewInvoice);
+            }
+
+            if (text.includes("OPEN INVOICE")) {
+                button.addEventListener("click", openExistingInvoice);
+            }
+        });
+    }
+}
+
+window.addDeliverable = addDeliverable;
+window.removeDeliverable = removeDeliverable;
+window.updateDeliverable = updateDeliverable;
+window.saveInvoice = saveInvoice;
+// =========================================================
+// LANDING PAGE INVOICE ACTIONS
+// =========================================================
+
+function startNewInvoice() {
+    console.log("NEW INVOICE clicked");
+
+    resetInvoice();
+
+    updateInvoice();
+
+    showDashboard();
+}
+
+
+async function openExistingInvoice() {
+    console.log("OPEN INVOICE clicked");
+
+    const client = window.__invoiceAuthClient || supabaseClient;
+
+    if (!client) {
+        alert("Database connection is not available.");
+        return;
+    }
+
+    const landingScreen = $("landingScreen");
+
+    if (!landingScreen) {
+        alert("Landing screen not found.");
+        return;
+    }
+
+    const input = landingScreen.querySelector("input");
+
+    if (!input) {
+        alert("Please enter an invoice number.");
+        return;
+    }
+
+    const invoiceNumber = input.value.trim();
+
+    if (!invoiceNumber) {
+        alert("Please enter an invoice number.");
+        input.focus();
+        return;
+    }
+
+    try {
+        // Check login
+        const {
+            data: { user },
+            error: authError
+        } = await client.auth.getUser();
+
+        if (authError || !user) {
+            alert("Your login session has expired. Please log in again.");
+            showLoginScreen();
+            return;
+        }
+
+        // Fetch invoice
+        const {
+            data: invoices,
+            error
+        } = await client
+            .from("invoices")
+            .select("*")
+            .eq("invoice_number", invoiceNumber)
+            .order("updated_at", { ascending: false });
+
+        if (error) {
+            console.error("OPEN INVOICE ERROR:", error);
+            alert("Could not open invoice.\n\n" + error.message);
+            return;
+        }
+
+        console.log("OPENED INVOICES:", invoices);
+
+        // Nothing found
+        if (!invoices || invoices.length === 0) {
+            alert(`Invoice "${invoiceNumber}" was not found.`);
+            return;
+        }
+
+        // If duplicates exist, use the most recently updated one
+        const invoice = invoices[0];
+
+        console.log("SELECTED INVOICE:", invoice);
+
+        // IMPORTANT:
+        // applySavedInvoice expects ONE invoice object,
+        // not the entire array.
+        applySavedInvoice(invoice);
+
+        console.log("INVOICE APPLIED TO UI");
+
+        showDashboard();
+        updateRoleAccess();
+        updateInvoice();
+
+    } catch (error) {
+        console.error("OPEN INVOICE FAILED:", error);
+        alert("Unable to open invoice. Please try again.");
+    }
+}
+// Expose functions globally
+window.startNewInvoice = startNewInvoice;
+window.openExistingInvoice = openExistingInvoice;
+document.addEventListener("DOMContentLoaded", async function () {
+    setupAuth();
+    setupEventListeners();
+    renderDeliverableEditors();
+    updateDiscountUI();
+    updateInvoice();
+    updateRoleAccess();
+    generateQR();
+
+    if (window.__invoiceAuthClient) {
+        const client = window.__invoiceAuthClient;
+        const { data: { session }, error } = await client.auth.getSession();
+        if (!error && session?.user) {
+            const { data: profile } = await client.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
+            if (profile && ["admin", "employee"].includes(profile.role)) {
+                localStorage.setItem(AUTH_ROLE_KEY, profile.role);
+                showLandingScreen();
+                updateRoleAccess();
+            }
+        }
+    }
+
+    console.log("Invoice Builder initialized successfully.");
+});

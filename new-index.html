@@ -1,70 +1,855 @@
-/* Invoice enhancements: larger footer logo, payment breakdown, and editable footer project name. */
-.footer-logo {
-    width: 28px !important;
-    height: 28px !important;
-    max-width: 100%;
-    object-fit: contain;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.footer-brand-column .footer-brand {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-}
+    <title>THINKLIMITLESS — Invoice</title>
 
-.invoice-footer .footer-column:first-child .footer-label {
-    color: #858585;
-    font-weight: 500;
-}
+    <link rel="canonical" href="index.html">
+    <script>
+        window.location.replace("index.html");
+    </script>
 
-.invoice-footer .footer-column:first-child .footer-value {
-    color: #777d84;
-    font-weight: 400;
-}
+    <style>
+        :root {
+            --paper-bg: rgb(243, 243, 241);
+            --ink: #111214;
+            --muted: #6d6f72;
+            --rule: #e0e1e3;
+            --white: #ffffff;
+        }
 
-.payment-breakdown {
-    display: grid;
-    gap: 5px;
-    margin-top: 10px;
-}
+        * {
+            box-sizing: border-box;
+        }
 
-.payment-breakdown .summary-row {
-    margin: 0;
-}
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
 
-.secondary-summary-row {
-    color: rgba(26, 26, 26, 0.62);
-}
+        body {
+            background: var(--paper-bg);
+            font-family: Helvetica, Arial, sans-serif;
+            color: var(--ink);
 
-.secondary-summary-row strong {
-    color: rgba(26, 26, 26, 0.72);
-    font-weight: 500;
-}
+            -webkit-font-smoothing: antialiased;
+            text-rendering: geometricPrecision;
+        }
 
-.enhancement-note {
-    margin-top: 5px;
-    color: #777;
-    font-size: 8px;
-    line-height: 1.35;
-}
+        /* =========================
+           A4 PAGE
+        ========================= */
 
-@media (max-width: 600px) {
-    .footer-brand-column .footer-brand {
-        align-items: center;
-        justify-content: flex-start;
-    }
+        .page {
+            position: relative;
 
-    .footer-logo {
-        width: 22px !important;
-        height: 22px !important;
-    }
-}
+            width: 595.2756pt;
+            height: 841.8898pt;
 
-@media print {
-    .footer-logo {
-        width: 28px !important;
-        height: 28px !important;
-    }
-}
+            margin: 0 auto;
+
+            overflow: hidden;
+
+            background: #fff;
+
+            border-radius: 13pt;
+        }
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            position: absolute;
+
+            left: 32pt;
+            top: 32pt;
+      
+            width: 531.2756pt;
+            height: 299.6524pt;
+
+            overflow: hidden;
+
+            border-radius: 13pt;
+        }
+
+        .hero-image {
+            display: block;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+        }
+
+        /* =========================
+           TOP INFORMATION
+        ========================= */
+
+        .top-grid {
+            position: absolute;
+
+            left: 57pt;
+            right: 57pt;
+            top: 356.55pt;
+
+            height: 39pt;
+
+            display: grid;
+
+            grid-template-columns:
+                186pt
+                1fr
+                80pt;
+        }
+
+        .field-label {
+            margin: 0 0 4.5pt;
+
+            font-size: 5.7pt;
+            line-height: 1.35;
+
+            font-weight: 700;
+
+            color: #77797c;
+        }
+
+        .field-value {
+            margin: 0;
+
+            font-size: 8.5pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            color: var(--ink);
+
+            white-space: nowrap;
+        }
+
+        .field-sub {
+            margin: 1.5pt 0 0;
+
+            font-size: 6.4pt;
+            line-height: 1.35;
+
+            font-weight: 400;
+
+            color: #707276;
+
+            white-space: nowrap;
+        }
+
+        .issued {
+            text-align: right;
+        }
+
+        /* =========================
+           PAYMENT STATUS
+        ========================= */
+
+        .status {
+            position: absolute;
+
+            left: 57pt;
+            top: 406.13pt;
+
+            display: flex;
+
+            align-items: baseline;
+
+            gap: 16.66pt;
+        }
+
+        .status .label {
+            font-size: 5.6pt;
+            line-height: 1.4;
+
+            font-weight: 700;
+
+            color: #77797c;
+        }
+
+        .status .value {
+            font-size: 6.1pt;
+            line-height: 1.4;
+
+            font-weight: 700;
+        }
+
+        /* =========================
+           PAYMENT PLAN
+        ========================= */
+
+        .plan-title {
+            position: absolute;
+
+            left: 57pt;
+            top: 429.09pt;
+
+            margin: 0;
+
+            font-size: 8pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+        }
+
+        /* =========================
+           DIVIDERS
+        ========================= */
+
+        .rule {
+            position: absolute;
+
+            left: 57pt;
+
+            width: 481.2756pt;
+
+            height: 0.65pt;
+
+            background: var(--rule);
+        }
+
+        .r1 {
+            top: 449.6524pt;
+        }
+
+        .r2 {
+            top: 476.6524pt;
+        }
+
+        .r3 {
+            top: 511.6524pt;
+        }
+
+        .r4 {
+            top: 731.8898pt;
+        }
+
+        /* =========================
+           PAYMENT TABLE
+        ========================= */
+
+        .table {
+            position: absolute;
+
+            left: 57pt;
+            top: 460.87pt;
+
+            width: 481.2756pt;
+        }
+
+        .table-head,
+        .row {
+            display: grid;
+
+            grid-template-columns:
+                186pt
+                202pt
+                49.58pt
+                73.7pt;
+        }
+
+        .table-head {
+            height: 16pt;
+
+            align-items: start;
+        }
+
+        .table-head div {
+            font-size: 5.4pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            color: #77797c;
+        }
+
+        .table-head div:nth-child(4) {
+            text-align: right;
+        }
+
+        .row {
+            position: absolute;
+
+            left: 0;
+
+            width: 100%;
+
+            align-items: start;
+        }
+
+        .row-1 {
+            top: 25.86pt;
+        }
+
+        .row-2 {
+            top: 63.86pt;
+        }
+
+        .milestone {
+            font-size: 7.4pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            white-space: nowrap;
+        }
+
+        .desc {
+            font-size: 6.2pt;
+            line-height: 1.42;
+
+            font-weight: 400;
+
+            color: #6e7073;
+
+            white-space: nowrap;
+        }
+
+        .state {
+            font-size: 6pt;
+            line-height: 1.42;
+
+            font-weight: 700;
+        }
+
+        .amount {
+            text-align: right;
+
+            font-size: 7.4pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            white-space: nowrap;
+        }
+
+        /* =========================
+           COMMERCIAL SUMMARY
+        ========================= */
+
+        .commercial {
+            position: absolute;
+
+            left: 57pt;
+            top: 569.66pt;
+
+            width: 190pt;
+        }
+
+        .commercial h3 {
+            margin: 0 0 7pt;
+
+            font-size: 5.6pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            color: #77797c;
+        }
+
+        .commercial-line {
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            margin-bottom: 5pt;
+
+            font-size: 6.7pt;
+            line-height: 1.38;
+
+            color: #686a6d;
+        }
+
+        .commercial-line .amount {
+            font-size: 6.7pt;
+
+            font-weight: 400;
+
+            color: #686a6d;
+        }
+
+        /* =========================
+           BALANCE DUE
+        ========================= */
+
+        .balance {
+            position: absolute;
+
+            left: 278pt;
+            top: 558.6524pt;
+
+            width: 260.2756pt;
+            height: 64pt;
+
+            border-radius: 7pt;
+
+            background: #111214;
+
+            color: #fff;
+
+            padding: 13.5pt 14pt;
+        }
+
+        .balance-label {
+            margin: 0 0 4pt;
+
+            font-size: 5.5pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            color: #aeb0b3;
+        }
+
+        .balance-value {
+            margin: 0;
+
+            font-size: 16.5pt;
+            line-height: 1.18;
+
+            font-weight: 700;
+
+            letter-spacing: -0.15pt;
+        }
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        .footer {
+            position: absolute;
+
+            left: 57pt;
+            right: 57pt;
+            top: 731.8898pt;
+
+            height: 63pt;
+        }
+
+        .footer-left {
+            position: absolute;
+
+            left: 0;
+            top: 10.5pt;
+        }
+
+        .footer-project {
+            position: absolute;
+
+            left: 186pt;
+            top: 10.5pt;
+        }
+
+        .footer-label {
+            margin: 0 0 3pt;
+
+            font-size: 5.5pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+
+            color: #77797c;
+        }
+
+        .footer-value {
+            margin: 0;
+
+            font-size: 6.2pt;
+            line-height: 1.38;
+
+            color: #686a6d;
+        }
+
+        /* =========================
+           BRAND
+        ========================= */
+
+        .brand {
+            position: absolute;
+
+            right: 0;
+            top: 4.5pt;
+
+            width: 94pt;
+
+            text-align: right;
+        }
+
+        .brand-name {
+            margin: 0;
+
+            font-size: 6.1pt;
+            line-height: 1.38;
+
+            font-weight: 700;
+        }
+
+        .brand-tag {
+            margin: 1pt 0 0;
+
+            font-size: 5pt;
+            line-height: 1.38;
+
+            color: #6f7174;
+        }
+
+        .brand-logo {
+            position: absolute;
+
+            right: -2pt;
+            top: 15pt;
+
+            width: 32pt;
+            height: 32pt;
+
+            object-fit: contain;
+        }
+
+        /* =========================
+           COPYRIGHT
+        ========================= */
+
+        .copyright {
+            position: absolute;
+
+            left: 57pt;
+            right: 57pt;
+            bottom: 45pt;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            font-size: 5.2pt;
+            line-height: 1.38;
+
+            color: #b2b3b5;
+
+            letter-spacing: 0.02pt;
+        }
+
+        /* =========================
+           PRINT
+        ========================= */
+
+        @media print {
+
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .page {
+                margin: 0;
+
+                border-radius: 0;
+            }
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 620px) {
+
+            body {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="page">
+
+    <!-- HERO -->
+    <section class="hero">
+
+        <img
+            class="hero-image"
+            src="assets/hero.png"
+            alt="Invoice header"
+        >
+
+    </section>
+
+
+    <!-- TOP INFORMATION -->
+    <section class="top-grid">
+
+        <div>
+
+            <p class="field-label">
+                BILLED TO
+            </p>
+
+            <p class="field-value">
+                Lakhani Builders
+            </p>
+
+            <p class="field-sub">
+                Website Redesign, Development &amp; CMS
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <p class="field-label">
+                PROJECT
+            </p>
+
+            <p class="field-value">
+                Lakhani Builders Digital Platform
+            </p>
+
+            <p class="field-sub">
+                Option 02 · Custom Website + CMS
+            </p>
+
+        </div>
+
+
+        <div class="issued">
+
+            <p class="field-label">
+                ISSUED
+            </p>
+
+            <p class="field-value">
+                17 AUG 2026
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- STATUS -->
+    <div class="status">
+
+        <span class="label">
+            PAYMENT STATUS
+        </span>
+
+        <span class="value">
+            50% PAID
+        </span>
+
+    </div>
+
+
+    <!-- PAYMENT PLAN -->
+    <h2 class="plan-title">
+        PAYMENT PLAN
+    </h2>
+
+
+    <!-- DIVIDERS -->
+    <div class="rule r1"></div>
+    <div class="rule r2"></div>
+    <div class="rule r3"></div>
+
+
+    <!-- TABLE -->
+    <section class="table">
+
+        <div class="table-head">
+
+            <div>
+                MILESTONE
+            </div>
+
+            <div>
+                DESCRIPTION
+            </div>
+
+            <div>
+                STATUS
+            </div>
+
+            <div>
+                AMOUNT
+            </div>
+
+        </div>
+
+
+        <div class="row row-1">
+
+            <div class="milestone">
+                01&nbsp;&nbsp; PROJECT INITIATION
+            </div>
+
+            <div class="desc">
+                50% upfront · commencement of approved implementation
+            </div>
+
+            <div class="state">
+                PAID
+            </div>
+
+            <div class="amount">
+                PKR 100,000
+            </div>
+
+        </div>
+
+
+        <div class="row row-2">
+
+            <div class="milestone">
+                02&nbsp;&nbsp; FINAL DELIVERY
+            </div>
+
+            <div class="desc">
+                50% remaining · completion, testing, approval &amp; delivery
+            </div>
+
+            <div class="state">
+                DUE
+            </div>
+
+            <div class="amount">
+                PKR 100,000
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- COMMERCIAL SUMMARY -->
+    <section class="commercial">
+
+        <h3>
+            COMMERCIAL SUMMARY
+        </h3>
+
+        <div class="commercial-line">
+
+            <span>
+                Original project fee
+            </span>
+
+            <span class="amount">
+                PKR 250,000
+            </span>
+
+        </div>
+
+
+        <div class="commercial-line discount">
+
+            <span>
+                Approved discount
+            </span>
+
+            <span class="amount">
+                − PKR 50,000
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- BALANCE -->
+    <section class="balance">
+
+        <p class="balance-label">
+            BALANCE DUE
+        </p>
+
+        <p class="balance-value">
+            PKR 100,000
+        </p>
+
+    </section>
+
+
+    <!-- FOOTER DIVIDER -->
+    <div class="rule r4"></div>
+
+
+    <!-- FOOTER -->
+    <footer class="footer">
+
+        <div class="footer-left">
+
+            <p class="footer-label">
+                PAYMENT TERMS
+            </p>
+
+            <p class="footer-value">
+                50% upfront · 50% on final delivery
+            </p>
+
+        </div>
+
+
+        <div class="footer-project">
+
+            <p class="footer-label">
+                PROJECT
+            </p>
+
+            <p class="footer-value">
+                Custom Website + CMS
+            </p>
+
+        </div>
+
+
+        <div class="brand">
+
+            <p class="brand-name">
+                THINKLIMITLESS
+            </p>
+
+            <p class="brand-tag">
+                AI · WEB · GROWTH
+            </p>
+
+            <img
+                class="brand-logo"
+                src="assets/thinklimitless-logo.png"
+                alt="ThinkLimitless"
+            >
+
+        </div>
+
+    </footer>
+
+
+    <!-- COPYRIGHT -->
+    <div class="copyright">
+
+        <span>
+            THINKLIMITLESS © 2026
+        </span>
+
+        <span>
+            LAKHANI BUILDERS · DIGITAL PLATFORM
+        </span>
+
+    </div>
+
+</main>
+
+</body>
+</html>
